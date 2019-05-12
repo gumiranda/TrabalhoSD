@@ -1,0 +1,9 @@
+insert 1 1
+select 1
+delete 1
+update 1 2
+insert 1 2
+update 1 4
+select 1
+insert 1 1
+insert 2 2
