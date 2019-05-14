@@ -1,6 +1,7 @@
 package com.example.server;
 
 
+import com.example.ServerResponse;
 import java.io.UnsupportedEncodingException;
 
 
@@ -14,6 +15,7 @@ import java.io.FileInputStream;
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
 import com.example.controle.Comando;
+import io.grpc.stub.StreamObserver;
 
 
 public class AplicarAoBanco implements Runnable{
@@ -28,7 +30,8 @@ public class AplicarAoBanco implements Runnable{
         this.servidor = s;
     }
    
-     public String ProcessaComando(String comando){
+     public String ProcessaComando(String comando,StreamObserver<ServerResponse> responseObserver){
+            ServerResponse sr;
             String comandos[] = comando.split(" ");
             byte[] dados = null;
             String retorno = null;  
@@ -80,33 +83,17 @@ public class AplicarAoBanco implements Runnable{
      
     public void run(){
         while(true){
-            Comando c = F3.getFirst();
-            Socket cliente = c.getCliente();
+            Comando c = F3.getFirst(); //Tratamento para tentar evitar memoria Leak:
+            StreamObserver<ServerResponse> responseObserver = c.getObserver();
             String comando = c.getComando();
-            String retorno = this.ProcessaComando(comando);
-            try {
-  
-                PrintStream cliente_retorno = new PrintStream(cliente.getOutputStream());
-                cliente_retorno.println(servidor.MandarMensagem(retorno));
-         
-            }catch(IOException ex) {
-                
-            }
-            
-            /*
-            //IMprimindo Base de dados
-            try {
-                this.banco.imprimir();
-            } catch (UnsupportedEncodingException ex) {
-                Logger.getLogger(AplicarAoBanco.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            */
-            //Tratamento para tentar evitar memoria Leak:
-            c = null;
-            cliente = null;
-            comando = null;
-            retorno = null;
-            System.gc();
+            String retorno = this.ProcessaComando(comando,responseObserver);
+//            c = null;
+            //          cliente = null;
+            //        comando = null;
+            //      retorno = null;
+            //    System.gc();
+            //PrintStream cliente_retorno = new PrintStream(cliente.getOutputStream());
+            //cliente_retorno.println(servidor.MandarMensagem(retorno));
             
         }
     }

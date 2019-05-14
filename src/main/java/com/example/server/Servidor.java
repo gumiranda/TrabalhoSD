@@ -5,6 +5,7 @@ package com.example.server;
  * @author Natan Rodovalho
  */
 
+import com.example.controle.ServiceImpl;
 import com.example.server.ReceberMensagem;
 import com.example.server.Log;
 import com.example.server.Fila;
@@ -13,6 +14,7 @@ import com.example.server.BaseDados;
 import com.example.server.AplicarAoBanco;
 import com.google.common.io.Files;
 import io.grpc.Server;
+import io.grpc.ServerBuilder;
 import java.util.ArrayList;
 import java.net.ServerSocket;
 import java.io.IOException;
@@ -37,6 +39,7 @@ public class Servidor {
     private ArrayList<Socket> clientes;
     private Fila F2;
     private Fila F3;
+    private Fila F4;
     private Fila F1;
     private int quantidade_threads = 15;
     private BaseDados Banco;
@@ -51,6 +54,7 @@ public class Servidor {
         this.F1 = new Fila();
         this.F2 = new Fila();
         this.F3 = new Fila();
+        this.F4 = new Fila();
         this.Banco = new BaseDados();
         this.Banco.RecuperardoLog("Log.txt");
     }
@@ -124,32 +128,29 @@ public class Servidor {
     }
     public void executa() throws IOException{
         
-        // ServerSocket servidor = new ServerSocket(this.porta);
-        
+try{
         //Devinindo POOL de threads
         ExecutorService thds = Executors.newFixedThreadPool(this.quantidade_threads);
         
+        this.server = ServerBuilder.forPort(this.porta).addService(new ServiceImpl(this.F1)).build();
+        System.out.println("Servidor iniciando");
+        this.server.start();
+        System.out.println("Servidor iniciado na porta "+this.porta);
         //Para copiar de F1 para F2 e para F3
-        CopiarLista copy = new CopiarLista(this.F1,this.F2,this.F3);
-        new Thread(copy).start();
-        
+        CopiarLista copy = new CopiarLista(this.F1,this.F2,this.F3,this.F4,this.porta);
+        new Thread(copy).start();        
         //Criando Log
         Log log = new Log(this.F2);  
         new Thread(log).start();
-        
-        
         //Thread para aplicar operacoes ao Banco de Dados
         AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco,this.F3,this);
         new Thread(bancoDados).start();
-     
-        while(true){
-            
-//            Socket cliente = servidor.accept();
-  //          System.out.println("Nova conexão com o cliente " +cliente.getInetAddress().getHostAddress());
-  //          this.clientes.add(cliente);
-    //        ReceberMensagem msg = new ReceberMensagem(cliente,this,this.F1);
-      //      thds.execute(msg);
-        }
+}
+catch(Exception e){
+        System.out.println(e);
+}
+
+
     }
     
     public synchronized String MandarMensagem(String mensagem){
