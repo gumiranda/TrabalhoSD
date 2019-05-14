@@ -1,7 +1,9 @@
 package com.example.server;
 
 
+import com.example.ServerResponse;
 import com.example.server.AplicarAoBanco;
+import io.grpc.stub.StreamObserver;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -22,7 +24,6 @@ public class BaseDados{
     }
     
     public void RecuperardoLog(String log) throws FileNotFoundException, IOException{
-       
         File arquivo = new File(log);
         if(arquivo.exists()){
             FileReader arq = new FileReader(log);
@@ -30,7 +31,7 @@ public class BaseDados{
 
             String linha = "";
             byte[] dados = null;
-            while (( linha = lerArq.readLine() ) != null) {
+            while (( linha = lerArq.readLine() ) != null) {                        
                 this.processa.ProcessaComando(linha);
             }
         }    

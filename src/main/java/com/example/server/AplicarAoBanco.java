@@ -26,7 +26,55 @@ public class AplicarAoBanco implements Runnable {
         this.F3 = F3;
         this.servidor = s;
     }
+     public String ProcessaComando(String comando){
+            String comandos[] = comando.split(" ");
+            byte[] dados = null;
+            String retorno = null;  
+            BigInteger chave = this.banco.getChave(comandos[1]);
 
+            if(comandos.length >=3 )
+                dados = this.banco.getDados(comandos);
+ 
+            byte[] retorno_select = null;
+                    String cmd = comandos[0].toLowerCase();
+
+                   if(cmd.equals("select")){
+                   if(this.banco.verifica(chave)){
+                         retorno_select = this.banco.get(chave);
+                          try {
+                            retorno = new String(retorno_select, "UTF-8");
+                            
+                        } catch (UnsupportedEncodingException ex) {
+                            Logger.getLogger(AplicarAoBanco.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }else{
+                        retorno = "Chave nao existe";
+                    }
+                   }
+                           else if(cmd.equals("insert")){
+                                                   retorno = this.banco.add(chave, dados);
+
+                           }
+        else if(cmd.equals("delete")){
+                                retorno = this.banco.Deletar(chave);
+
+        }
+                           else if(cmd.equals("update")){
+                                retorno = this.banco.update(chave, dados);
+
+                           }
+
+                
+             
+            //Tratamento para tentar evitar memoria Leak:
+            comando = null;
+            comandos = null;
+            dados = null;
+            chave = null;
+            System.gc();
+            
+            return retorno;
+    }
     public String ProcessaComando(Comando comando, StreamObserver<ServerResponse> responseObserver) {
         String comandos[] = comando.getComando().split(" ");
         byte[] dados = null;

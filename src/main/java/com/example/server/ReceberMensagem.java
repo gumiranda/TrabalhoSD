@@ -32,6 +32,7 @@ public class ReceberMensagem implements Runnable{
     }
     
     public void run(){
+        /*
         Scanner s;
         while(!this.exit){
            
@@ -61,7 +62,7 @@ public class ReceberMensagem implements Runnable{
         }
         
         
-      
+      */
     }
     
      public void stop() 
