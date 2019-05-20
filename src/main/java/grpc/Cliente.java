@@ -21,7 +21,7 @@ public class Cliente {
                 public String comando;
 		private final ServicoGrpc.ServicoBlockingStub blockingStub;
 		public Cliente(String host, int port) {
-                this(ManagedChannelBuilder.forAddress(host, port).build());
+                this(ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build());
                                     this.comando = null;
 		}
 
@@ -34,7 +34,7 @@ public class Cliente {
 			channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
 		}
 
-		/** Say hello to server. */
+
 		
 
 		/**
@@ -42,7 +42,7 @@ public class Cliente {
 		 * use in the greeting.
 		 */
 		public static void main(String[] args) throws Exception {
-                           Cliente cliente = new Cliente("127.0.0.1", 50051);	
+                           Cliente cliente = new Cliente("127.0.0.1", 59043);	
                     try {
                                cliente.executa(cliente);
                                                 //client.insert(1,"valor");

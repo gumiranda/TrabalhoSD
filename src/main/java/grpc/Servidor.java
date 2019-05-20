@@ -11,16 +11,14 @@ import gRPC.proto.ServerResponse;
 import gRPC.proto.ValorRequest;
 
 public class Servidor {
-	/**
-	 * Server that manages startup/shutdown of a {@code Greeter} server.
-	 */
+
 		private static final Logger logger = Logger.getLogger(Servidor.class.getName());
 
 		private Server server;
 
 		private void start() throws IOException {
 			/* The port on which the server should run */
-			int port = 50051;
+			int port = 59043;
 			server = ServerBuilder.forPort(port).addService(new ServiceImpl()).build().start();
 			logger.info("Server started, listening on " + port);
 			Runtime.getRuntime().addShutdownHook(new Thread() {

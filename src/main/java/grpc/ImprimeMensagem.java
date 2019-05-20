@@ -74,7 +74,6 @@ public class ImprimeMensagem implements Runnable {
         logger.info("Resposta do servidor: " + response.getResponse());
 
     }
-
     //Imprime mensagem ao receber do servidor
     public void run() {
         while (!exit) {
