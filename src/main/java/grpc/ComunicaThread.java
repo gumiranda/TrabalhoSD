@@ -3,9 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package sistemas_distribuidos.cliente;
-
-
+package grpc;
 
 //Classe para fazer thread q ler comandos conversar com a q imprimi dados
 public class ComunicaThread {
