@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 
 import gRPC.proto.ServerResponse;
 import gRPC.proto.ValorRequest;
+import java.math.BigInteger;
 
 public class Servidor {
 
@@ -19,7 +20,7 @@ public class Servidor {
 		private void start() throws IOException {
 			/* The port on which the server should run */
 			int port = 59043;
-			server = ServerBuilder.forPort(port).addService(new ServiceImpl()).build().start();
+			server = ServerBuilder.forPort(port).addService(new ServiceImpl(new Fila())).build().start();
 			logger.info("Server started, listening on " + port);
 			Runtime.getRuntime().addShutdownHook(new Thread() {
 				@Override
@@ -59,31 +60,46 @@ public class Servidor {
 		}
 
 		static class ServiceImpl extends gRPC.proto.ServicoGrpc.ServicoImplBase {
-
+    private Fila f1;
+ public ServiceImpl(Fila f1){
+        this.f1 = f1;
+    }
 			@Override
 			public void select(ChaveRequest req, StreamObserver<ServerResponse> responseObserver) {
-				ServerResponse reply = ServerResponse.newBuilder().setResponse("Selecionando dado com chave: " + req.getChave()).build();
+							Comando c;
+                                c = new Comando("SELECT",new BigInteger(req.getChave()),responseObserver);
+                            this.f1.put(c);	
+                            ServerResponse reply = ServerResponse.newBuilder().setResponse("Selecionando dado com chave: " + req.getChave()).build();
 				responseObserver.onNext(reply);
 				responseObserver.onCompleted();
 			}
 
                     @Override
 			public void delete(ChaveRequest req, StreamObserver<ServerResponse> responseObserver) {
-				ServerResponse reply = ServerResponse.newBuilder().setResponse("Deletando dado com chave: " + req.getChave()).build();
+							Comando c;
+                                c = new Comando("DELETE",new BigInteger(req.getChave()),responseObserver);
+                            this.f1.put(c);	
+                            ServerResponse reply = ServerResponse.newBuilder().setResponse("Deletando dado com chave: " + req.getChave()).build();
 				responseObserver.onNext(reply);
 				responseObserver.onCompleted();
 			}
 
 			@Override
 			public void insert(ValorRequest req, StreamObserver<ServerResponse> responseObserver) {
-				ServerResponse reply = ServerResponse.newBuilder().setResponse("Inserindo dado com chave: " + req.getChave()+" e valor: "+req.getValor()).build();
-				responseObserver.onNext(reply);
+				Comando c;
+                                c = new Comando("INSERT",req.getValor(),new BigInteger(req.getChave()),responseObserver);
+                            this.f1.put(c);            
+                            ServerResponse reply = ServerResponse.newBuilder().setResponse("Inserindo dado com chave: " + req.getChave()+" e valor: "+req.getValor()).build();	
+                                responseObserver.onNext(reply);
 				responseObserver.onCompleted();
 			}
                         
 			@Override
 			public void update(ValorRequest req, StreamObserver<ServerResponse> responseObserver) {
-				ServerResponse reply = ServerResponse.newBuilder().setResponse("Atualizando dado com chave: " + req.getChave()+" e valor: "+req.getValor()).build();
+							Comando c;
+                                c = new Comando("UPDATE",req.getValor(),new BigInteger(req.getChave()),responseObserver);
+                            this.f1.put(c);	
+                            ServerResponse reply = ServerResponse.newBuilder().setResponse("Atualizando dado com chave: " + req.getChave()+" e valor: "+req.getValor()).build();
 				responseObserver.onNext(reply);
 				responseObserver.onCompleted();
 			}

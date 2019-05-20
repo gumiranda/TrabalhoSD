@@ -17,13 +17,13 @@ service Servico {
 }
 
 message ChaveRequest {
-  int64 chave = 1;
+  string chave = 1;
 }
 
 message ServerResponse {
   string response = 1;
 }
 message ValorRequest {
-  int64 chave = 1;
+  string chave = 1;
   string valor = 2;
 }

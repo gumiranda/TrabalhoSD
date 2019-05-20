@@ -32,7 +32,7 @@ public class ImprimeMensagem implements Runnable {
         this.com = com;
     }
 
-    public void insertOrUpdate(long chave, String valor, String comando) {
+    public void insertOrUpdate(String chave, String valor, String comando) {
         logger.info(comando + " no dado com chave: " + chave+ " e valor: " + valor);
         ValorRequest request = ValorRequest.newBuilder().setChave(chave).setValor(valor).build();
         ServerResponse response = null;
@@ -53,7 +53,7 @@ public class ImprimeMensagem implements Runnable {
 
     }
 
-    public void selectOrDelete(long chave, String comando) {
+    public void selectOrDelete(String chave, String comando) {
         logger.info(comando + " no dado com chave: " + chave);
         ChaveRequest request = ChaveRequest.newBuilder().setChave(chave).build();
 
@@ -132,13 +132,13 @@ public class ImprimeMensagem implements Runnable {
         boolean fi = false;
         String cmd[] = aux.split(" ");
         if (cmd[0].equals("INSERT")) {
-            this.insertOrUpdate(Long.parseLong(cmd[1]), cmd[2], "INSERT");
+            this.insertOrUpdate(cmd[1],cmd[2], "INSERT");
         } else if (cmd[0].equals("DELETE")) {
-            this.selectOrDelete(Long.parseLong(cmd[1]), "DELETE");
+            this.selectOrDelete(cmd[1], "DELETE");
         } else if (cmd[0].equals("SELECT")) {
-            this.selectOrDelete(Long.parseLong(cmd[1]), "SELECT");
+            this.selectOrDelete(cmd[1], "SELECT");
         } else if (cmd[0].equals("UPDATE")) {
-            this.insertOrUpdate(Long.parseLong(cmd[1]), cmd[2], "UPDATE");
+            this.insertOrUpdate(cmd[1] , cmd[2], "UPDATE");
         } else {
             System.out.println("Comando inválido , portanto não será enviado para o servidor");
         }

@@ -45,7 +45,6 @@ public class Cliente {
                            Cliente cliente = new Cliente("127.0.0.1", 59043);	
                     try {
                                cliente.executa(cliente);
-                                                //client.insert(1,"valor");
 			}catch(Exception e){
             System.out.println(e);
             System.exit(0);
