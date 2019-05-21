@@ -40,11 +40,10 @@ public class LerComandos implements Runnable {
 
     //Retorna false caso a thread tenha q parar ou false caso contrario
     public synchronized void validarComandos(String comando) {
-        String aux;
-        aux = comando.toUpperCase();
         boolean flag = true;
         boolean fi = false;
-        String cmd[] = aux.split(" ");
+        String cmd[] = comando.split(" ");
+        cmd[0] = cmd[0].toUpperCase();
         if (cmd[0].equals("INSERT")) {
 
             if (cmd.length < 3) {

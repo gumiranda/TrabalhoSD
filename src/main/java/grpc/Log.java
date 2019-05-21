@@ -39,9 +39,14 @@ public class Log implements Runnable{
                 FileWriter arq = new FileWriter(this.arquivo,true);
                 PrintWriter gravarArq = new PrintWriter(arq);
                 
-                if(!comandos[0].toLowerCase().equals("select") || !comandos[0].equals("quit"))
-                    gravarArq.println(comando);
-                
+                if(!comandos[0].toLowerCase().equals("select") || !comandos[0].equals("quit")){
+                    if(comandos[0].toLowerCase().equals("delete")){
+                    gravarArq.println(comando+" "+c.getChave());
+                    }
+                    else if(comandos[0].toLowerCase().equals("update")||comandos[0].toLowerCase().equals("insert")){
+                                        gravarArq.println(comando+" "+c.getChave()+" "+c.getValor());
+                    }
+                }
                 gravarArq.flush();
                 arq.close();
                 

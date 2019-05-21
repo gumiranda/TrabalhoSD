@@ -25,59 +25,64 @@ public class AplicarAoBanco implements Runnable {
         this.F3 = F3;
         this.servidor = s;
     }
-     public String ProcessaComando(String comando){
-            String comandos[] = comando.split(" ");
-            byte[] dados = null;
-            String retorno = null;  
-            BigInteger chave = this.banco.getChave(comandos[1]);
 
-            if(comandos.length >=3 )
-                dados = this.banco.getDados(comandos);
- 
-            byte[] retorno_select = null;
-                    String cmd = comandos[0].toLowerCase();
-
-                   if(cmd.equals("select")){
-                   if(this.banco.verifica(chave)){
-                         retorno_select = this.banco.get(chave);
-                          try {
-                            retorno = new String(retorno_select, "UTF-8");
-                            
-                        } catch (UnsupportedEncodingException ex) {
-                            Logger.getLogger(AplicarAoBanco.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }else{
-                        retorno = "Chave nao existe";
-                    }
-                   }
-                           else if(cmd.equals("insert")){
-                                                   retorno = this.banco.add(chave, dados);
-
-                           }
-        else if(cmd.equals("delete")){
-                                retorno = this.banco.Deletar(chave);
-
-        }
-                           else if(cmd.equals("update")){
-                                retorno = this.banco.update(chave, dados);
-
-                           }
-
-                
-             
-            //Tratamento para tentar evitar memoria Leak:
-            comando = null;
-            comandos = null;
-            dados = null;
-            chave = null;
-            System.gc();
-            
-            return retorno;
-    }
-    public String ProcessaComando(Comando comando, StreamObserver<ServerResponse> responseObserver) {
-        String comandos[] = comando.getComando().split(" ");
+    public String ProcessaComando(String comando) {
+        String comandos[] = comando.split(" ");
         byte[] dados = null;
         String retorno = null;
+        BigInteger chave = this.banco.getChave(comandos[1]);
+
+        if (comandos.length >= 3) {
+            dados = this.banco.getDados(comandos);
+        }
+
+        byte[] retorno_select = null;
+        String cmd = comandos[0].toLowerCase();
+
+        if (cmd.equals("select")) {
+            if (this.banco.verifica(chave)) {
+                retorno_select = this.banco.get(chave);
+                try {
+                    retorno = new String(retorno_select, "UTF-8");
+
+                } catch (UnsupportedEncodingException ex) {
+                    Logger.getLogger(AplicarAoBanco.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } else {
+                retorno = "Chave nao existe";
+            }
+        } else if (cmd.equals("insert")) {
+            retorno = this.banco.add(chave, dados);
+
+        } else if (cmd.equals("delete")) {
+            retorno = this.banco.Deletar(chave);
+
+        } else if (cmd.equals("update")) {
+            retorno = this.banco.update(chave, dados);
+
+        }
+
+        //Tratamento para tentar evitar memoria Leak:
+        comando = null;
+        comandos = null;
+        dados = null;
+        chave = null;
+        System.gc();
+
+        return retorno;
+    }
+
+    public String ProcessaComando(Comando comando, StreamObserver<ServerResponse> responseObserver) {
+
+        String command;
+        command = comando.getComando()+" "+comando.getChave();
+        if (comando.getValor() != null) {
+            command = command+" "+ comando.getValor();
+        }
+                String comandos[] = command.split(" ");
+        byte[] dados = null;
+        String retorno = null;
+
         BigInteger chave = comando.getChave();
         try {
             ServerResponse sr = null;
@@ -99,7 +104,7 @@ public class AplicarAoBanco implements Runnable {
                     }
                 } else {
                     retorno = "Chave nao existe";
-                    sr = ServerResponse.newBuilder().setResponse("Chave n�o existe").build();
+                    sr = ServerResponse.newBuilder().setResponse("Chave nao existe").build();
                 }
                 responseObserver.onNext(sr);
                 responseObserver.onCompleted();
@@ -110,7 +115,9 @@ public class AplicarAoBanco implements Runnable {
                     sr = ServerResponse.newBuilder().setResponse("Chave ja existe").build();
                 } else {
                     retorno = this.banco.add(chave, dados);
-                    sr = ServerResponse.newBuilder().setResponse("Valor: " + dados + "com chave: " + chave + " salvo com sucesso").build();
+                                            String value = new String(dados, "UTF-8");
+
+                    sr = ServerResponse.newBuilder().setResponse("Valor: " +value + "com chave: " + chave + " salvo com sucesso").build();
                 }
                 responseObserver.onNext(sr);
                 responseObserver.onCompleted();
@@ -119,7 +126,7 @@ public class AplicarAoBanco implements Runnable {
 
                 if (this.banco.verifica(chave)) {
                     retorno = this.banco.Deletar(chave);
-                    sr = ServerResponse.newBuilder().setResponse("Valor: " + dados + "com chave: " + chave + " deletado com sucesso").build();
+                    sr = ServerResponse.newBuilder().setResponse("Dado com chave: " + chave + " deletado com sucesso").build();
 
                 } else {
                     retorno = "N�o existe chave para ser deletada";
@@ -131,7 +138,9 @@ public class AplicarAoBanco implements Runnable {
             } else if (cmd.equals("update")) {
                 if (this.banco.verifica(chave)) {
                     retorno = this.banco.update(chave, dados);
-                    sr = ServerResponse.newBuilder().setResponse("Atualizando dado com o Valor: " + dados + "e chave: " + chave + "").build();
+                                                                String vlr = new String(dados, "UTF-8");
+
+                    sr = ServerResponse.newBuilder().setResponse("Atualizando dado com o Valor: " + vlr + "e chave: " + chave + "").build();
                 } else {
                     retorno = "N�o existe chave para ser atualizada";
                     sr = ServerResponse.newBuilder().setResponse("Não existe chave para ser atualizada").build();
@@ -149,7 +158,7 @@ public class AplicarAoBanco implements Runnable {
             System.gc();
             return retorno;
         } catch (Exception e) {
-            System.out.println("Exce��o : " + e);
+            System.out.println("Exceçao : " + e);
         }
         return retorno;
     }

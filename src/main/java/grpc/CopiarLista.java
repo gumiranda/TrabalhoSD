@@ -24,7 +24,7 @@ public class CopiarLista implements Runnable {
         while (true) {
             try {
                 Comando c = F1.getFirst();
-                if (this.porta == 8080) {
+                if (this.porta == 59043) {
                     if ((c.getChave().compareTo(new BigInteger("1")) == 1 || c.getChave().compareTo(new BigInteger("1")) == 1) && (c.getChave().compareTo(new BigInteger("300000")) == -1)) {
                         System.out.println("Enfileirando comandos nas filas F2 e F3 usando a porta 8080");
                         F2.put(c);

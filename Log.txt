@@ -1,9 +1,10 @@
-insert 1 1
-select 1
-delete 1
-update 1 2
-insert 1 2
-update 1 4
-select 1
-insert 1 1
-insert 2 2
+INSERT 44 AC
+INSERT 44 CD
+UPDATE 44 DC
+INSERT 43 A
+INSERT 88 C
+INSERT 41 C
+INSERT 34 DDS
+INSERT 38 vcd
+INSERT 41 teste
+INSERT 49 teste

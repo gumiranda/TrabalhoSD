@@ -126,11 +126,10 @@ public class ImprimeMensagem implements Runnable {
     }
 
     public void enviaComando(String comando) {
-        String aux;
-        aux = comando.toUpperCase();
         boolean flag = true;
         boolean fi = false;
-        String cmd[] = aux.split(" ");
+        String cmd[] = comando.split(" ");
+        cmd[0] = cmd[0].toUpperCase();
         if (cmd[0].equals("INSERT")) {
             this.insertOrUpdate(cmd[1],cmd[2], "INSERT");
         } else if (cmd[0].equals("DELETE")) {
