@@ -6,13 +6,18 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.logging.Logger;
-
+import java.io.File;
 import gRPC.proto.ServerResponse;
 import gRPC.proto.ValorRequest;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.math.BigInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
+import java.io.*;
+import java.math.*;
+import java.util.Random;
 
 public class Servidor {
 
@@ -26,6 +31,7 @@ public class Servidor {
     public Fila F1;
     private Server server;
     public String retorno;
+
     public Servidor(int porta) throws IOException {
         this.porta = porta;
         this.F1 = new Fila();
@@ -42,7 +48,7 @@ public class Servidor {
         ExecutorService thds = Executors.newFixedThreadPool(this.quantidade_threads);
         server = ServerBuilder.forPort(this.porta).addService(new ServiceImpl(this.F1)).build().start();
         logger.info("Server started, listening on " + this.porta);
-        
+
         CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3, this.F4, this.porta);
         new Thread(copy).start();
         Log log = new Log(this.F2);
@@ -69,14 +75,15 @@ public class Servidor {
             server.shutdown();
         }
     }
-public void transmitResponse(String sr) throws IOException{
-    if(this.porta == 59043){
 
-    }else{
-                    try {
+    public void transmitResponse(String sr) throws IOException {
+        if (this.porta == 59043) {
+
+        } else {
+            try {
                 this.stop();
                 int porta;
-                porta = 59043; 
+                porta = 59043;
                 Servidor servidor = new Servidor(porta);
                 servidor.start();
                 ServerResponse response = ServerResponse.newBuilder().setResponse(sr).build();
@@ -87,14 +94,63 @@ public void transmitResponse(String sr) throws IOException{
             } catch (InterruptedException ex) {
                 Logger.getLogger(VerificaServidoresReponsaveis.class.getName()).log(Level.SEVERE, null, ex);
             }
-/*        server = ServerBuilder.forPort(59043).addService(new ServiceImpl(this.F1)).build().start();
+            /*        server = ServerBuilder.forPort(59043).addService(new ServiceImpl(this.F1)).build().start();
         ServerResponse response = ServerResponse.newBuilder().setResponse(sr).build();
         System.out.println(response);
         server = null;
         this.start();
-  */  }
-    
-}
+             */        }
+
+    }
+
+    public BigInteger getRandom(int length) {
+        Random random = new Random();
+        byte[] data = new byte[length];
+        random.nextBytes(data);
+        return new BigInteger(data);
+    }
+
+    public void setConfig(String arq) throws FileNotFoundException, IOException {
+        File arquivo = new File(arq);
+        if (arquivo.exists()) {
+            FileReader arq2 = new FileReader(arquivo);
+            BufferedReader lerArq = new BufferedReader(arq2);
+            PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(arquivo, true)));
+
+            String[] str = null;
+            String linha = "";
+            byte[] dados = null;
+            while ((linha = lerArq.readLine()) != null) {
+                str = linha.split(";");
+            }
+            String[] str2 = str;
+            if (str2 != null) {
+                int serverNumber = Integer.parseInt(str2[0]);
+                int port = Integer.parseInt(str2[1]);
+                int primeiraPorta = Integer.parseInt(str2[2]);
+                int numeroDeNodos = Integer.parseInt(str2[3]);
+                int serverIdentifier = Integer.parseInt(str2[4]);
+                int proximaPorta = Integer.parseInt(str2[5]);
+                //pra criar mais servidor faz
+                if (port == primeiraPorta) {
+                    int cont = 0;
+                    out.println();
+                    while(cont < 5){
+                    BigInteger bi =  getRandom(serverNumber+1);
+                    String numeroId = bi.toString().replace("-","");
+                    out.println((serverNumber+1) + ";" + (port + 1) + ";" + primeiraPorta 
+                            + ";" + (numeroDeNodos + 1) + ";" + numeroId + ";" + (port + 2));
+                    port++;
+                    numeroDeNodos++;
+                    serverNumber++;
+                    cont++;
+                    }
+                    out.close();
+                }
+            }
+
+        }
+    }
 
     /**
      * Await termination on the main thread since the grpc library uses daemon
@@ -112,31 +168,10 @@ public void transmitResponse(String sr) throws IOException{
     public static void main(String[] args) throws IOException, InterruptedException {
         int porta = 59043;
         int flag = 0;
-         Servidor server1 = new Servidor(porta);
-      /*   Servidor server2 = new Servidor(porta+1);
-         Servidor server3 = new Servidor(porta+2);
-         Servidor server4 = new Servidor(porta+3);
-         Servidor server5 = new Servidor(porta+4);
-*/
+        Servidor server1 = new Servidor(porta);
+        server1.setConfig("servers.txt");
         server1.start();
         server1.blockUntilShutdown();
-
-/*while(true){
-            server1.start();
-    if(flag == 1){
-            server5.blockUntilShutdown();        
-    }
-        server2.start();
-        server1.blockUntilShutdown();
-        server3.start();
-        server2.blockUntilShutdown();        
-        server4.start();
-        server3.blockUntilShutdown();
-        server5.start();
-        server4.blockUntilShutdown();
-        flag = 1;
-}
-         */
     }
 
     static class ServiceImpl extends gRPC.proto.ServicoGrpc.ServicoImplBase {
@@ -187,4 +222,5 @@ public void transmitResponse(String sr) throws IOException{
             responseObserver.onCompleted();
              */        }
     }
+
 }
