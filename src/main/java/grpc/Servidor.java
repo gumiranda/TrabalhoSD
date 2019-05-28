@@ -129,10 +129,9 @@ public class Servidor {
                 int port = Integer.parseInt(str2[1]);
                 int primeiraPorta = Integer.parseInt(str2[2]);
                 int numeroDeNodos = Integer.parseInt(str2[3]);
-                int serverIdentifier = Integer.parseInt(str2[4]);
+                BigInteger serverIdentifier = new BigInteger(str2[4]);
                 int proximaPorta = Integer.parseInt(str2[5]);
                 //pra criar mais servidor faz
-                if (port == primeiraPorta) {
                     int cont = 0;
                     out.println();
                     while(cont < 5){
@@ -146,7 +145,7 @@ public class Servidor {
                     cont++;
                     }
                     out.close();
-                }
+                
             }
 
         }
