@@ -11,13 +11,22 @@ public class CopiarLista implements Runnable {
     private Fila F3;
     private Fila F4;
     private int porta;
-
+   private ChordNode node;
     public CopiarLista(Fila F1, Fila F2, Fila F3, Fila F4, int porta) {
         this.F1 = F1;
         this.F2 = F2;
         this.F3 = F3;
         this.F4 = F4;
         this.porta = porta;
+    }
+
+    CopiarLista(Fila F1, Fila F2, Fila F3, Fila F4, int porta, ChordNode node) {
+        this.F1 = F1;
+        this.F2 = F2;
+        this.F3 = F3;
+        this.F4 = F4;
+        this.porta = porta;
+        this.node = node;
     }
 
     public void run() {

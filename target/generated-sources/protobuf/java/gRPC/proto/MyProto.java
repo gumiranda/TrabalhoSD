@@ -15,6 +15,11 @@ public final class MyProto {
         (com.google.protobuf.ExtensionRegistryLite) registry);
   }
   static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_gRPC_DataNode_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_gRPC_DataNode_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
     internal_static_gRPC_ChaveRequest_descriptor;
   static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
@@ -38,16 +43,23 @@ public final class MyProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\ngRPC.proto\022\004gRPC\"\035\n\014ChaveRequest\022\r\n\005ch" +
-      "ave\030\001 \001(\t\"\"\n\016ServerResponse\022\020\n\010response\030" +
-      "\001 \001(\t\",\n\014ValorRequest\022\r\n\005chave\030\001 \001(\t\022\r\n\005" +
-      "valor\030\002 \001(\t2\341\001\n\007Servico\0224\n\006delete\022\022.gRPC" +
-      ".ChaveRequest\032\024.gRPC.ServerResponse\"\000\0224\n" +
-      "\006select\022\022.gRPC.ChaveRequest\032\024.gRPC.Serve" +
-      "rResponse\"\000\0224\n\006insert\022\022.gRPC.ValorReques" +
-      "t\032\024.gRPC.ServerResponse\"\000\0224\n\006update\022\022.gR" +
-      "PC.ValorRequest\032\024.gRPC.ServerResponse\"\000B" +
-      "\035\n\ngRPC.protoB\007MyProtoP\001\242\002\003HLWb\006proto3"
+      "\n\ngRPC.proto\022\004gRPC\032\033google/protobuf/empt" +
+      "y.proto\"8\n\010DataNode\022\n\n\002ip\030\001 \001(\t\022\014\n\004port\030" +
+      "\002 \001(\005\022\022\n\nultimoNode\030\003 \001(\010\"\035\n\014ChaveReques" +
+      "t\022\r\n\005chave\030\001 \001(\t\"\"\n\016ServerResponse\022\020\n\010re" +
+      "sponse\030\001 \001(\t\",\n\014ValorRequest\022\r\n\005chave\030\001 " +
+      "\001(\t\022\r\n\005valor\030\002 \001(\t2\341\001\n\007Servico\0224\n\006delete" +
+      "\022\022.gRPC.ChaveRequest\032\024.gRPC.ServerRespon" +
+      "se\"\000\0224\n\006select\022\022.gRPC.ChaveRequest\032\024.gRP" +
+      "C.ServerResponse\"\000\0224\n\006insert\022\022.gRPC.Valo" +
+      "rRequest\032\024.gRPC.ServerResponse\"\000\0224\n\006upda" +
+      "te\022\022.gRPC.ValorRequest\032\024.gRPC.ServerResp" +
+      "onse\"\0002\265\001\n\014ChordService\0225\n\tescutando\022\026.g" +
+      "oogle.protobuf.Empty\032\016.gRPC.DataNode\"\000\0227" +
+      "\n\013setAnterior\022\016.gRPC.DataNode\032\026.google.p" +
+      "rotobuf.Empty\"\000\0225\n\021setPrimeiroUltimo\022\016.g" +
+      "RPC.DataNode\032\016.gRPC.DataNode\"\000B\035\n\ngRPC.p" +
+      "rotoB\007MyProtoP\001\242\002\003HLWb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -60,25 +72,33 @@ public final class MyProto {
     com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new com.google.protobuf.Descriptors.FileDescriptor[] {
+          com.google.protobuf.EmptyProto.getDescriptor(),
         }, assigner);
-    internal_static_gRPC_ChaveRequest_descriptor =
+    internal_static_gRPC_DataNode_descriptor =
       getDescriptor().getMessageTypes().get(0);
+    internal_static_gRPC_DataNode_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_gRPC_DataNode_descriptor,
+        new java.lang.String[] { "Ip", "Port", "UltimoNode", });
+    internal_static_gRPC_ChaveRequest_descriptor =
+      getDescriptor().getMessageTypes().get(1);
     internal_static_gRPC_ChaveRequest_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_gRPC_ChaveRequest_descriptor,
         new java.lang.String[] { "Chave", });
     internal_static_gRPC_ServerResponse_descriptor =
-      getDescriptor().getMessageTypes().get(1);
+      getDescriptor().getMessageTypes().get(2);
     internal_static_gRPC_ServerResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_gRPC_ServerResponse_descriptor,
         new java.lang.String[] { "Response", });
     internal_static_gRPC_ValorRequest_descriptor =
-      getDescriptor().getMessageTypes().get(2);
+      getDescriptor().getMessageTypes().get(3);
     internal_static_gRPC_ValorRequest_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_gRPC_ValorRequest_descriptor,
         new java.lang.String[] { "Chave", "Valor", });
+    com.google.protobuf.EmptyProto.getDescriptor();
   }
 
   // @@protoc_insertion_point(outer_class_scope)

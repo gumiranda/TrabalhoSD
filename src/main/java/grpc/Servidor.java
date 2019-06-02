@@ -1,6 +1,9 @@
 package grpc;
 
+import com.google.protobuf.Empty;
 import gRPC.proto.ChaveRequest;
+import gRPC.proto.ChordServiceGrpc;
+import gRPC.proto.DataNode;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -9,6 +12,8 @@ import java.util.logging.Logger;
 import java.io.File;
 import gRPC.proto.ServerResponse;
 import gRPC.proto.ValorRequest;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.math.BigInteger;
@@ -23,16 +28,18 @@ public class Servidor {
 
     private static final Logger logger = Logger.getLogger(Servidor.class.getName());
     private int quantidade_threads = 15;
-    public int porta;
+    public int porta,saltoProximaPorta,numeroDeNos,numeroBitsId;
     public BaseDados Banco;
     private Fila F2;
     private Fila F3;
     private Fila F4;
     public Fila F1;
     private Server server;
+    private String ip;
     public String retorno;
 
-    public Servidor(int porta) throws IOException {
+    private volatile ChordNode node;
+    public Servidor(int porta) throws IOException, Exception {
         this.porta = porta;
         this.F1 = new Fila();
         this.F2 = new Fila();
@@ -40,8 +47,13 @@ public class Servidor {
         this.F4 = new Fila();
         this.Banco = new BaseDados();
         this.Banco.RecuperardoLog("Log.txt");
-    }
+        conectaChord();
 
+    }
+private void conectaChord() throws Exception {
+        ChordConnector chordConnector = new ChordConnector(this.ip, this.primeiraPorta, this.saltoProximaPorta, this.numeroDeNos, this.numeroBitsId);
+        this.node = chordConnector.connect();
+    }
     public void start() throws IOException {
         /* The port on which the server should run */
 
@@ -49,7 +61,7 @@ public class Servidor {
         server = ServerBuilder.forPort(this.porta).addService(new ServiceImpl(this.F1)).build().start();
         logger.info("Server started, listening on " + this.porta);
 
-        CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3, this.F4, this.porta);
+        CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3, this.F4, this.porta,this.node);
         new Thread(copy).start();
         Log log = new Log(this.F2);
         new Thread(log).start();
@@ -76,7 +88,7 @@ public class Servidor {
         }
     }
 
-    public void transmitResponse(String sr) throws IOException {
+    public void transmitResponse(String sr) throws IOException, Exception {
         if (this.porta == 59043) {
 
         } else {
@@ -125,32 +137,20 @@ public class Servidor {
             }
             String[] str2 = str;
             if (str2 != null) {
-                int serverNumber = Integer.parseInt(str2[0]);
-                int port = Integer.parseInt(str2[1]);
-                int primeiraPorta = Integer.parseInt(str2[2]);
-                int numeroDeNodos = Integer.parseInt(str2[3]);
-                BigInteger serverIdentifier = new BigInteger(str2[4]);
-                int proximaPorta = Integer.parseInt(str2[5]);
-                //pra criar mais servidor faz
-                    int cont = 0;
-                    out.println();
-                    while(cont < 5){
-                    BigInteger bi =  getRandom(serverNumber+1);
-                    String numeroId = bi.toString().replace("-","");
-                    out.println((serverNumber+1) + ";" + (port + 1) + ";" + primeiraPorta 
-                            + ";" + (numeroDeNodos + 1) + ";" + numeroId + ";" + (port + 2));
-                    port++;
-                    numeroDeNodos++;
-                    serverNumber++;
-                    cont++;
-                    }
-                    out.close();
+                this.ip = str2[0];
+                this.saltoProximaPorta = Integer.parseInt(str2[1]);
+                this.numeroBitsId = Integer.parseInt(str2[2]);
+                this.numeroDeNos = Integer.parseInt(str2[3]);
+                this.primeiraPorta = Integer.parseInt(str2[4]);
+
+                BigInteger serverIdentifier = new BigInteger(str2[5]);
+                int proximaPorta = Integer.parseInt(str2[6]);
                 
             }
 
         }
     }
-
+    private int primeiraPorta;
     /**
      * Await termination on the main thread since the grpc library uses daemon
      * threads.
@@ -164,7 +164,7 @@ public class Servidor {
     /**
      * Main launches the server from the command line.
      */
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, Exception {
         int porta = 59043;
         int flag = 0;
         Servidor server1 = new Servidor(porta);
@@ -220,6 +220,46 @@ public class Servidor {
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
              */        }
+    }
+
+    static class ChordServiceImpl extends gRPC.proto.ChordServiceGrpc.ChordServiceImplBase {
+
+        private static volatile ChordNode node;
+
+        public ChordServiceImpl(ChordNode node) {
+            this.node = node;
+        }
+
+       
+        @Override
+        public void setAnterior(DataNode request, StreamObserver<Empty> responseObserver) {
+node.setAnterior(request);
+responseObserver.onNext(Empty.newBuilder().build());
+responseObserver.onCompleted();
+System.out.println(node);
+        }
+         @Override
+        public void escutando(Empty request, StreamObserver<DataNode> responseObserver) {
+responseObserver.onNext(node.getDataNode());
+responseObserver.onCompleted();
+        }
+        @Override
+        public void setPrimeiroUltimo(DataNode request, StreamObserver<DataNode> responseObserver) {
+if(node.ehPrimeiro()){
+node.setProximo(request);
+DataNode primeiroNode = DataNode.newBuilder().setIp(node.getIp()).setPort(node.getPorta()).build();
+responseObserver.onNext(primeiroNode);
+responseObserver.onCompleted();
+System.out.println(node);
+}else{
+ManagedChannel proxChannel = ManagedChannelBuilder.forAddress(node.getIpProximo(),node.getProximaPorta()).usePlaintext(true).build();
+ChordServiceGrpc.ChordServiceBlockingStub stub = ChordServiceGrpc.newBlockingStub(proxChannel);
+DataNode primeiro = stub.setPrimeiroUltimo(request);
+responseObserver.onNext(primeiro);
+responseObserver.onCompleted();
+}
+        }
+
     }
 
 }
