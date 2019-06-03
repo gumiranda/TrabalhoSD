@@ -6,7 +6,7 @@
 package grpc;
 
 import gRPC.proto.DataNode;
-
+import java.math.BigInteger;
 /**
  *
  * @author Samsung
@@ -22,16 +22,16 @@ return DataNode.newBuilder().setIp(this.ip).setPort(this.porta).build();
    public void setId(int id){
    this.Id = id;
    }
-   public long getOffsetId(){
+   public BigInteger getOffsetId(){
    return offsetId;
    }
-   public void setOffsetId(long offsetId){
+   public void setOffsetId(BigInteger offsetId){
    this.offsetId = offsetId;
    }
-   public long getMaxId(){
+   public BigInteger getMaxId(){
    return maxId;
    }
-   public void setMaxId(long maxId){
+   public void setMaxId(BigInteger maxId){
        this.maxId = maxId;
    }
    public int getNumeroDeNodes(){
@@ -72,7 +72,7 @@ public void setEhUltimo(boolean ehPrimeiro){
     private int porta;
     private String proximoIp;
     private int Id,numeroDeNodes,proximaPorta,portaAnterior;
-    private long offsetId,maxId;
+    private BigInteger offsetId,maxId;
     private boolean ehPrimeiro,ehUltimo;
     private String ip,ipAnterior;
     public ChordNode() {

@@ -10,6 +10,7 @@ import gRPC.proto.ServerResponse;
 import gRPC.proto.ServicoGrpc;
 import gRPC.proto.ValorRequest;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import java.util.Scanner;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,12 +26,19 @@ public class ImprimeMensagem implements Runnable {
     private boolean exit = false;
     private static final Logger logger = Logger.getLogger(Cliente.class.getName());
     private final ServicoGrpc.ServicoBlockingStub blockingStub;
-
+    private String c;
     public ImprimeMensagem(Cliente cliente, ComunicaThread com) {
         this.cliente = cliente;
         blockingStub = ServicoGrpc.newBlockingStub(cliente.channel);
         this.com = com;
     }
+    
+    public ImprimeMensagem(Cliente cliente,String c, ComunicaThread com) {
+        this.cliente = cliente;
+        this.c = c;
+        blockingStub = ServicoGrpc.newBlockingStub(cliente.channel);
+        this.com = com;
+    }    
 
     public void insertOrUpdate(String chave, String valor, String comando) {
         logger.info(comando + " no dado com chave: " + chave+ " e valor: " + valor);
@@ -38,7 +46,13 @@ public class ImprimeMensagem implements Runnable {
         ServerResponse response = null;
         try {
             if (comando.equals("INSERT")) {
-                response = blockingStub.insert(request);
+               int portaCliente = this.cliente.porta;
+               if(portaCliente != 59043){
+                   System.out.println("Verifica erro");
+                                response = blockingStub.insert(request);
+               }else{
+                               response = blockingStub.insert(request);
+               }
             } else if (comando.equals("UPDATE")) {
                 response = blockingStub.update(request);
             } else {

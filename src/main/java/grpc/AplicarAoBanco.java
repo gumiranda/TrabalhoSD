@@ -169,20 +169,13 @@ public class AplicarAoBanco implements Runnable {
             StreamObserver<ServerResponse> responseObserver = c.getObserver();
             String retorno = this.ProcessaComando(c, responseObserver);
             try {
-                this.servidor.transmitResponse(retorno);
-                
-//            c = null;
-//          cliente = null;
-//        comando = null;
-//      retorno = null;
-//    System.gc();
-//PrintStream cliente_retorno = new PrintStream(cliente.getOutputStream());
-//cliente_retorno.println(servidor.MandarMensagem(retorno));
-            } catch (IOException ex) {
-                Logger.getLogger(AplicarAoBanco.class.getName()).log(Level.SEVERE, null, ex);
-            }
+                    this.servidor.transmitResponse(retorno);
+                  
+                } catch (Exception ex) {
+                    Logger.getLogger(AplicarAoBanco.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } 
 
         }
     }
 
-}

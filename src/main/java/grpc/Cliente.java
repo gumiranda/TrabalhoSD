@@ -15,16 +15,31 @@ import java.io.IOException;
 import java.net.Socket;
 
 public class Cliente {
+    public int porta;
+    public String host;
 	    private ComunicaThread com = new ComunicaThread();
 		private static final Logger logger = Logger.getLogger(Cliente.class.getName());
 		public final ManagedChannel channel;
                 public String comando;
+                
 		private final ServicoGrpc.ServicoBlockingStub blockingStub;
 		public Cliente(String host, int port) {
-                this(ManagedChannelBuilder.forAddress(host, port).usePlaintext(true).build());
-                                    this.comando = null;
+                this(ManagedChannelBuilder.forAddress(host,port).usePlaintext(true).build());
+                this.comando = null;
+                this.host = host;
+        this.porta = port;
 		}
-
+		public Cliente(String host, int port,Comando comando) {
+                this(ManagedChannelBuilder.forAddress(host,port).usePlaintext(true).build());
+        String command;
+        command = comando.getComando()+" "+comando.getChave();
+        if (comando.getValor() != null) {
+            command = command+" "+ comando.getValor();
+        }
+        this.host = host;
+        this.porta = port;
+                this.comando = command;
+		}              
 		Cliente(ManagedChannel channel) {
 			this.channel = channel;
 			blockingStub = ServicoGrpc.newBlockingStub(channel);
@@ -64,8 +79,12 @@ public class Cliente {
         
         im.join();
         c.stop();
-        //cliente.close();
         
     }
+                 public void enviaComando(Cliente cliente) throws IOException, InterruptedException{
+                 ImprimeMensagem imprimir = new ImprimeMensagem(cliente,this.com);
+                  imprimir.enviaComando(this.comando);
+                  this.comando = null;
+                 }
                 
 	}

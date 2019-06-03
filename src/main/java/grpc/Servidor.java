@@ -47,18 +47,26 @@ public class Servidor {
         this.F4 = new Fila();
         this.Banco = new BaseDados();
         this.Banco.RecuperardoLog("Log.txt");
+        setConfig("servers.txt");
         conectaChord();
-
+    }
+        public Servidor(int porta,ChordNode node) throws IOException, Exception {
+        this.porta = porta;
+        this.F1 = new Fila();
+        this.F2 = new Fila();
+        this.F3 = new Fila();
+        this.F4 = new Fila();
+        this.Banco = new BaseDados();
+        this.node = node;
+        this.Banco.RecuperardoLog("Log.txt");
     }
 private void conectaChord() throws Exception {
         ChordConnector chordConnector = new ChordConnector(this.ip, this.primeiraPorta, this.saltoProximaPorta, this.numeroDeNos, this.numeroBitsId);
         this.node = chordConnector.connect();
     }
     public void start() throws IOException {
-        /* The port on which the server should run */
-
         ExecutorService thds = Executors.newFixedThreadPool(this.quantidade_threads);
-        server = ServerBuilder.forPort(this.porta).addService(new ServiceImpl(this.F1)).build().start();
+        server = ServerBuilder.forPort(this.porta).addService(new ServiceImpl(this.F1)).addService(new ChordServiceImpl(this.node)).build().start();
         logger.info("Server started, listening on " + this.porta);
 
         CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3, this.F4, this.porta,this.node);
@@ -67,7 +75,7 @@ private void conectaChord() throws Exception {
         new Thread(log).start();
         AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
         new Thread(bancoDados).start();
-        VerificaServidoresReponsaveis invocaServers = new VerificaServidoresReponsaveis(this.F2, this.F3, this.F4, this);
+         VerificaServidoresReponsaveis invocaServers = new VerificaServidoresReponsaveis(this.F2, this.F3, this.F4, this,this.node);
         new Thread(invocaServers).start();
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -106,12 +114,7 @@ private void conectaChord() throws Exception {
             } catch (InterruptedException ex) {
                 Logger.getLogger(VerificaServidoresReponsaveis.class.getName()).log(Level.SEVERE, null, ex);
             }
-            /*        server = ServerBuilder.forPort(59043).addService(new ServiceImpl(this.F1)).build().start();
-        ServerResponse response = ServerResponse.newBuilder().setResponse(sr).build();
-        System.out.println(response);
-        server = null;
-        this.start();
-             */        }
+    }
 
     }
 
@@ -142,10 +145,6 @@ private void conectaChord() throws Exception {
                 this.numeroBitsId = Integer.parseInt(str2[2]);
                 this.numeroDeNos = Integer.parseInt(str2[3]);
                 this.primeiraPorta = Integer.parseInt(str2[4]);
-
-                BigInteger serverIdentifier = new BigInteger(str2[5]);
-                int proximaPorta = Integer.parseInt(str2[6]);
-                
             }
 
         }
@@ -168,7 +167,8 @@ private void conectaChord() throws Exception {
         int porta = 59043;
         int flag = 0;
         Servidor server1 = new Servidor(porta);
-        server1.setConfig("servers.txt");
+  //      server1.setConfig("servers.txt");
+    //    server1.conectaChord();
         server1.start();
         server1.blockUntilShutdown();
     }

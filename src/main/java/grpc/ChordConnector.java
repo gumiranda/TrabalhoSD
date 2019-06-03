@@ -8,6 +8,7 @@ import com.google.protobuf.Empty;
 import gRPC.proto.ChordServiceGrpc;
 import gRPC.proto.DataNode;
 import io.grpc.*;
+import java.math.BigInteger;
 
 public class ChordConnector {
 
@@ -22,7 +23,6 @@ public class ChordConnector {
         this.ip = ip;
         this.port = port;
         this.saltoProximaPorta = saltoProximaPorta;
-
         this.firstNode = (long) Math.pow(2, numeroBitsId) - 1;
         this.offSetId = (long) Math.pow(2, numeroBitsId) / numeroDeNos;
         this.numeroDeNos = numeroDeNos;
@@ -31,13 +31,13 @@ public class ChordConnector {
     public ChordNode connect() throws Exception {
         ChordNode node = new ChordNode();
         node.setId(numeroDeNos);
-        node.setOffsetId(offSetId);
+        BigInteger offId = BigInteger.valueOf(offSetId);
+        node.setOffsetId(offId);
         node.setIp(ip);
         node.setPorta(port);
-        node.setMaxId(firstNode);
+        node.setMaxId(BigInteger.valueOf(firstNode));
         node.setNumeroDeNodes(numeroDeNos);
         node.setEhPrimeiro(true);
-
         return tryConnectOnRing(node);
     }
 
@@ -116,8 +116,8 @@ public class ChordConnector {
             newCandidateNode.setPorta(candidateNode.getPorta() + saltoProximaPorta);// TODO diferenciar de nenhum serviço rodando na porta, de uma porta já ocupada, se porta estiver ocupada só incrementar a porta
             newCandidateNode.setMaxId(candidateNode.getMaxId());
             newCandidateNode.setNumeroDeNodes(numeroDeNos);
-            newCandidateNode.setOffsetId(offSetId);
-            newCandidateNode.setMaxId(firstNode);
+            newCandidateNode.setOffsetId(BigInteger.valueOf(offSetId));
+            newCandidateNode.setMaxId(BigInteger.valueOf(firstNode));
             newCandidateNode.setProximo(channelNodeFromNext);
             newCandidateNode.setEhPrimeiro(false);
             newCandidateNode.setEhUltimo(lastNode);
