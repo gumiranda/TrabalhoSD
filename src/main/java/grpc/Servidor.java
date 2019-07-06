@@ -1,19 +1,8 @@
 package grpc;
 
-import com.google.protobuf.Empty;
-import gRPC.proto.ChaveRequest;
-import gRPC.proto.ChordServiceGrpc;
-import gRPC.proto.DataNode;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
-import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.io.File;
-import gRPC.proto.ServerResponse;
-import gRPC.proto.ValorRequest;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.math.BigInteger;
@@ -22,101 +11,116 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.io.*;
 import java.math.*;
+import java.util.ArrayList;
 import java.util.Random;
+import io.atomix.cluster.MemberId;
+import io.atomix.cluster.Node;
+import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.core.Atomix;
+import io.atomix.core.AtomixBuilder;
+import io.atomix.core.map.DistributedMap;
+import io.atomix.core.profile.ConsensusProfile;
+import io.atomix.utils.net.Address;
+import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.Namespaces;
+import io.atomix.utils.serializer.Serializer;
+import java.util.concurrent.CompletableFuture;
 
 public class Servidor {
 
+    private BigInteger quantidade_chaves = new BigInteger("2"); //Quantidade de chaves que o chord tera(Maior chave)
+    private BigInteger chave_responsavel = new BigInteger("1"); // Chave em que o servidor eh responsavel
+    private static FingerTable tabela; //Tabela de nos 
     private static final Logger logger = Logger.getLogger(Servidor.class.getName());
     private int quantidade_threads = 15;
-    public int porta,saltoProximaPorta,numeroDeNos,numeroBitsId;
+    public int porta, saltoProximaPorta, numeroDeNos, numeroBitsId;
     public BaseDados Banco;
     private Fila F2;
     private Fila F3;
     private Fila F4;
     public Fila F1;
-    private Server server;
-    private String ip;
     public String retorno;
+    public int primeiraPorta = 59043;
+    private String ip;
+    private ComunicaThread com;
 
-    private volatile ChordNode node;
-    public Servidor(int porta) throws IOException, Exception {
+    public Servidor(int porta, int porta_servidor) throws IOException, Exception {
         this.porta = porta;
         this.F1 = new Fila();
         this.F2 = new Fila();
         this.F3 = new Fila();
         this.F4 = new Fila();
         this.Banco = new BaseDados();
-        this.Banco.RecuperardoLog("Log.txt");
+        this.tabela = new FingerTable(this, porta_servidor);
+        this.com = new ComunicaThread();
+        this.Banco.RecuperarBanco(this.chave_responsavel.toString());
+        
         setConfig("servers.txt");
-        conectaChord();
     }
-        public Servidor(int porta,ChordNode node) throws IOException, Exception {
-        this.porta = porta;
-        this.F1 = new Fila();
-        this.F2 = new Fila();
-        this.F3 = new Fila();
-        this.F4 = new Fila();
-        this.Banco = new BaseDados();
-        this.node = node;
-        this.Banco.RecuperardoLog("Log.txt");
+
+    public BigInteger getQuantidadeChaves() {
+        return this.quantidade_chaves;
     }
-private void conectaChord() throws Exception {
-        ChordConnector chordConnector = new ChordConnector(this.ip, this.primeiraPorta, this.saltoProximaPorta, this.numeroDeNos, this.numeroBitsId);
-        this.node = chordConnector.connect();
+
+    public BigInteger getChave() {
+        return this.chave_responsavel;
     }
+
     public void start() throws IOException {
+        /* The port on which the server should run */
+
         ExecutorService thds = Executors.newFixedThreadPool(this.quantidade_threads);
-        server = ServerBuilder.forPort(this.porta).addService(new ServiceImpl(this.F1)).addService(new ChordServiceImpl(this.node)).build().start();
-        logger.info("Server started, listening on " + this.porta);
-
-        CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3, this.F4, this.porta,this.node);
-        new Thread(copy).start();
-        Log log = new Log(this.F2);
-        new Thread(log).start();
-        AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
-        new Thread(bancoDados).start();
-         VerificaServidoresReponsaveis invocaServers = new VerificaServidoresReponsaveis(this.F2, this.F3, this.F4, this,this.node);
-        new Thread(invocaServers).start();
-
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                // Use stderr here since the logger may have been reset by its JVM shutdown
-                // hook.
-                System.err.println("*** shutting down gRPC server since JVM is shutting down");
-                Servidor.this.stop();
-                System.err.println("*** server shut down");
+        
+        this.a.start().join();
+        System.out.println("Cluster formado");
+        this.a.getMembershipService().addListener(event -> {
+            switch (event.type()) {
+                case MEMBER_ADDED:
+                    System.out.println(event.subject().id() + " entrou no cluster");
+                    break;
+                case MEMBER_REMOVED:
+                    System.out.println(event.subject().id() + " saiu do cluster");
+                    break;
             }
         });
-    }
+         DistributedMap<BigInteger, byte[]> map = a.<BigInteger,byte[]>mapBuilder("map-database")
+                .withCacheEnabled()
+                .build();
+        this.Banco = new BaseDados(map);
 
-    public void stop() {
-        if (server != null) {
-            server.shutdown();
-        }
-    }
+           a.getCommunicationService().subscribe("mensagem-big", s::decode, cmd -> {
 
-    public void transmitResponse(String sr) throws IOException, Exception {
-        if (this.porta == 59043) {
+            Comando cmdRecebido = (Comando) cmd;
 
-        } else {
-            try {
-                this.stop();
-                int porta;
-                porta = 59043;
-                Servidor servidor = new Servidor(porta);
-                servidor.start();
-                ServerResponse response = ServerResponse.newBuilder().setResponse(sr).build();
-                System.out.println(response);
-                servidor.blockUntilShutdown();
-            } catch (IOException ex) {
-                Logger.getLogger(VerificaServidoresReponsaveis.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (InterruptedException ex) {
-                Logger.getLogger(VerificaServidoresReponsaveis.class.getName()).log(Level.SEVERE, null, ex);
+            logger.info("Comando recebido: " + cmdRecebido.getComando());
+
+            if (cmdRecebido == null) {
+                logger.info("Comando inválido");
+                return CompletableFuture.completedFuture(new Comando("COMANDO INVÁLIDO",new BigInteger("-1")));
             }
+            
+        this.F1.put(cmdRecebido);
+        CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3, this.F4, this.porta);
+        new Thread(copy).start();
+        AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
+        new Thread(bancoDados).start();
+        SnapShot snapshot = new SnapShot(this.Banco, this.com, this.chave_responsavel.toString());
+        new Thread(snapshot).start();
+        Log log = new Log(this.F2, this.com, snapshot, this.chave_responsavel.toString());
+        new Thread(log).start();
+        String retorno = "Erro ao processar comando";
+            while (this.retorno != null) {
+               retorno = this.retorno;
+                this.retorno = null;
+                 logger.info("Retorno ao cliente " + retorno);
+            }
+         return CompletableFuture.completedFuture(new Comando(retorno,new BigInteger("-1")));
+
+        }, s::encode);
+        logger.info("Server started, listening on " + this.porta);
     }
 
-    }
+
 
     public BigInteger getRandom(int length) {
         Random random = new Random();
@@ -139,7 +143,9 @@ private void conectaChord() throws Exception {
                 str = linha.split(";");
             }
             String[] str2 = str;
+            System.out.println(str);
             if (str2 != null) {
+
                 this.ip = str2[0];
                 this.saltoProximaPorta = Integer.parseInt(str2[1]);
                 this.numeroBitsId = Integer.parseInt(str2[2]);
@@ -149,117 +155,52 @@ private void conectaChord() throws Exception {
 
         }
     }
-    private int primeiraPorta;
-    /**
-     * Await termination on the main thread since the grpc library uses daemon
-     * threads.
-     */
-    public void blockUntilShutdown() throws InterruptedException {
-        if (server != null) {
-            server.awaitTermination();
-        }
-    }
+public Serializer s;
+public Atomix a;
 
-    /**
-     * Main launches the server from the command line.
-     */
     public static void main(String[] args) throws IOException, InterruptedException, Exception {
+        int IdServidor = Integer.parseInt(args[0]);
+        ArrayList<Address> enderecos = new ArrayList<>();
+        Serializer s = Serializer.using(Namespace.builder()
+                .register(Namespaces.BASIC)
+                .register(BigInteger.class)
+                .register(MemberId.class)
+                .register(Comando.class)
+                .build());
+        for (int i = 1; i < args.length; i++) {
+            Address end = new Address(args[i], Integer.parseInt(args[i + 1]));
+            enderecos.add(end);
+            i++;
+        }
+        AtomixBuilder builder = Atomix.builder();
+        Atomix a = builder.withMemberId("member-" + IdServidor)
+                .withAddress(enderecos.get(IdServidor))
+                .withMembershipProvider(BootstrapDiscoveryProvider.builder()
+                        .withNodes(Node.builder()
+                                .withId("member-0")
+                                .withAddress(enderecos.get(0))
+                                .build(),
+                                Node.builder()
+                                        .withId("member-1")
+                                        .withAddress(enderecos.get(1))
+                                        .build(),
+                                Node.builder()
+                                        .withId("member-2")
+                                        .withAddress(enderecos.get(2))
+                                        .build())
+                        .build())
+                .withProfiles(ConsensusProfile.builder().withDataPath("C:\\server" + IdServidor).withMembers("member-1", "member-2", "member-3").build())
+                .build();
+
         int porta = 59043;
+        int porta2 = 59045;
         int flag = 0;
-        Servidor server1 = new Servidor(porta);
-  //      server1.setConfig("servers.txt");
-    //    server1.conectaChord();
+        Servidor server1 = new Servidor(porta, -1);
+        server1.a = a;
+        server1.s = s;
         server1.start();
-        server1.blockUntilShutdown();
-    }
-
-    static class ServiceImpl extends gRPC.proto.ServicoGrpc.ServicoImplBase {
-
-        private Fila f1;
-
-        public ServiceImpl(Fila f1) {
-            this.f1 = f1;
-        }
-
-        @Override
-        public void select(ChaveRequest req, StreamObserver<ServerResponse> responseObserver) {
-            Comando c;
-            c = new Comando("SELECT", new BigInteger(req.getChave()), responseObserver);
-            this.f1.put(c);
-            /*    ServerResponse reply = ServerResponse.newBuilder().setResponse("Selecionando dado com chave: " + req.getChave()).build();
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();*/
-        }
-
-        @Override
-        public void delete(ChaveRequest req, StreamObserver<ServerResponse> responseObserver) {
-            Comando c;
-            c = new Comando("DELETE", new BigInteger(req.getChave()), responseObserver);
-            this.f1.put(c);
-            /*            ServerResponse reply = ServerResponse.newBuilder().setResponse("Deletando dado com chave: " + req.getChave()).build();
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
-             */        }
-
-        @Override
-        public void insert(ValorRequest req, StreamObserver<ServerResponse> responseObserver) {
-            Comando c;
-            c = new Comando("INSERT", req.getValor(), new BigInteger(req.getChave()), responseObserver);
-            this.f1.put(c);
-            /*        ServerResponse reply = ServerResponse.newBuilder().setResponse("Inserindo dado com chave: " + req.getChave() + " e valor: " + req.getValor()).build();
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
-             */        }
-
-        @Override
-        public void update(ValorRequest req, StreamObserver<ServerResponse> responseObserver) {
-            Comando c;
-            c = new Comando("UPDATE", req.getValor(), new BigInteger(req.getChave()), responseObserver);
-            this.f1.put(c);
-            /*            ServerResponse reply = ServerResponse.newBuilder().setResponse("Atualizando dado com chave: " + req.getChave() + " e valor: " + req.getValor()).build();
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
-             */        }
-    }
-
-    static class ChordServiceImpl extends gRPC.proto.ChordServiceGrpc.ChordServiceImplBase {
-
-        private static volatile ChordNode node;
-
-        public ChordServiceImpl(ChordNode node) {
-            this.node = node;
-        }
-
-       
-        @Override
-        public void setAnterior(DataNode request, StreamObserver<Empty> responseObserver) {
-node.setAnterior(request);
-responseObserver.onNext(Empty.newBuilder().build());
-responseObserver.onCompleted();
-System.out.println(node);
-        }
-         @Override
-        public void escutando(Empty request, StreamObserver<DataNode> responseObserver) {
-responseObserver.onNext(node.getDataNode());
-responseObserver.onCompleted();
-        }
-        @Override
-        public void setPrimeiroUltimo(DataNode request, StreamObserver<DataNode> responseObserver) {
-if(node.ehPrimeiro()){
-node.setProximo(request);
-DataNode primeiroNode = DataNode.newBuilder().setIp(node.getIp()).setPort(node.getPorta()).build();
-responseObserver.onNext(primeiroNode);
-responseObserver.onCompleted();
-System.out.println(node);
-}else{
-ManagedChannel proxChannel = ManagedChannelBuilder.forAddress(node.getIpProximo(),node.getProximaPorta()).usePlaintext(true).build();
-ChordServiceGrpc.ChordServiceBlockingStub stub = ChordServiceGrpc.newBlockingStub(proxChannel);
-DataNode primeiro = stub.setPrimeiroUltimo(request);
-responseObserver.onNext(primeiro);
-responseObserver.onCompleted();
-}
-        }
 
     }
 
+  
 }

@@ -1,7 +1,5 @@
 package grpc;
-
-
-import io.grpc.stub.StreamObserver;
+import io.atomix.core.map.DistributedMap;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -11,27 +9,109 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+import org.json.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.json.JSONObject;
+import java.util.Iterator;
+import java.util.Set;
 
 public class BaseDados{
     private Map<BigInteger,byte[]> Banco;
     private AplicarAoBanco processa = new AplicarAoBanco(this,null,null);  
+    public BaseDados(Map<BigInteger,byte[]> dm){
+        this.Banco = dm;
+    }
+
     public BaseDados(){
         this.Banco = new HashMap<BigInteger,byte[]>();
     }
-    
-    public void RecuperardoLog(String log) throws FileNotFoundException, IOException{
-        File arquivo = new File(log);
-        if(arquivo.exists()){
-            FileReader arq = new FileReader(log);
-            BufferedReader lerArq = new BufferedReader(arq);
-
-            String linha = "";
-            byte[] dados = null;
-            while (( linha = lerArq.readLine() ) != null) {                        
-                this.processa.ProcessaComando(linha);
+   public int getMaior(ArrayList<Integer> c){
+        int maior = c.get(0);
+        for(int i =1;i<c.size();i++){
+            if(c.get(i) > maior)
+                maior = c.get(i);
+        }
+        return maior;
+    }
+    public void RecuperarBanco(String id) throws FileNotFoundException, IOException{
+        File snap = new File("SNAP_"+id);
+        File log = new File("LOG_"+id);
+        if(snap.exists()){
+            ArrayList<Integer> contadores = new ArrayList();
+            File files[] = snap.listFiles();
+            for(int i =0;i<files.length;i++){
+                String nome = files[i].getName();
+                nome = nome.replace("SnapShot","");
+                nome = nome.replace(".json","");
+                contadores.add(Integer.parseInt(nome));
             }
+            int maior = getMaior(contadores);
+            JSONArray ja = null;
+            String nm_arquivo = "SnapShot"+Integer.toString(maior)+".json";
+            java.io.FileReader fr = new java.io.FileReader("SNAP_"+id+"//"+nm_arquivo);
+            java.io.BufferedReader br = new BufferedReader(fr);
+            StringBuilder sb = new StringBuilder(); 
+            String line;
+            line = br.readLine();
+            JSONObject my_obj = new JSONObject(line);
+            Set<String> chaves = my_obj.keySet();
+            Iterator<String> c = chaves.iterator();
+            while(c.hasNext()){
+                String chave = c.next();
+                String valor = my_obj.getString(chave);
+                byte [] s = valor.getBytes();
+                BigInteger n = new BigInteger(chave);
+                this.add(n,s);
+   
+            }
+            this.imprimir();
+           
+            br.close();
+            fr.close();
+            for(int i =0;i<files.length;i++){
+                 File arquivo = new File("SNAP_"+id+"//"+files[i].getName());
+                 arquivo.delete();
+            }
+            
+           
+             if(log.exists()){
+                ArrayList<Integer> indices = new ArrayList();
+                File arquivos[] = log.listFiles();
+                for(int i =0;i<arquivos.length;i++){
+                    String nome = arquivos[i].getName();
+                    nome = nome.replace("Log","");
+                    nome = nome.replace(".txt","");
+                    System.out.println(nome);
+                    indices.add(Integer.parseInt(nome));
+                }
+                int maior_indice = getMaior(contadores);
+                if(maior_indice > maior){
+                    String nm = "Log_"+id+"//"+"Log"+maior_indice+".txt";
+                    FileReader arq = new FileReader(nm);
+                  
+                    BufferedReader lerArq = new BufferedReader(arq);
+
+                    String linha = "";
+                    byte[] dados = null;
+                    while (( linha = lerArq.readLine() ) != null) {                        
+                        this.processa.ProcessaComando(linha);
+                    }
+                }
+                
+                for(int i =0;i<arquivos.length;i++){
+                    File arquivo = new File("LOG_"+id+"//"+arquivos[i].getName());
+                    arquivo.delete();
+                }
+                 
+            }
+
+           
+            
         }    
     }
     
@@ -67,6 +147,15 @@ public class BaseDados{
                 }
                 
         return d.getBytes();
+    }
+    public Map<BigInteger,byte[]> getMap(){
+        return this.Banco;
+    }
+    public ArrayList<BigInteger> getKeys(){
+        ArrayList<BigInteger> l = new ArrayList<BigInteger>();
+        for(BigInteger key: this.Banco.keySet())
+            l.add(key);
+        return l;
     }
     
     public synchronized String add(BigInteger chave,byte[] dado){

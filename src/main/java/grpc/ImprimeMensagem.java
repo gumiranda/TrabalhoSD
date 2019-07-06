@@ -5,17 +5,14 @@
  */
 package grpc;
 
-import gRPC.proto.ChaveRequest;
-import gRPC.proto.ServerResponse;
-import gRPC.proto.ServicoGrpc;
-import gRPC.proto.ValorRequest;
-import io.grpc.StatusRuntimeException;
-import io.grpc.stub.StreamObserver;
+
+import io.atomix.cluster.MemberId;
 import java.util.Scanner;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,68 +22,66 @@ public class ImprimeMensagem implements Runnable {
     ComunicaThread com;
     private boolean exit = false;
     private static final Logger logger = Logger.getLogger(Cliente.class.getName());
-    private final ServicoGrpc.ServicoBlockingStub blockingStub;
     private String c;
     public ImprimeMensagem(Cliente cliente, ComunicaThread com) {
         this.cliente = cliente;
-        blockingStub = ServicoGrpc.newBlockingStub(cliente.channel);
         this.com = com;
     }
-    
     public ImprimeMensagem(Cliente cliente,String c, ComunicaThread com) {
         this.cliente = cliente;
         this.c = c;
-        blockingStub = ServicoGrpc.newBlockingStub(cliente.channel);
         this.com = com;
-    }    
-
+    } 
     public void insertOrUpdate(String chave, String valor, String comando) {
         logger.info(comando + " no dado com chave: " + chave+ " e valor: " + valor);
-        ValorRequest request = ValorRequest.newBuilder().setChave(chave).setValor(valor).build();
-        ServerResponse response = null;
+        Comando cmd = new Comando(comando,valor,new BigInteger(chave));
+        
         try {
             if (comando.equals("INSERT")) {
-               int portaCliente = this.cliente.porta;
-               if(portaCliente != 59043){
-                   System.out.println("Verifica erro");
-                                response = blockingStub.insert(request);
-               }else{
-                               response = blockingStub.insert(request);
-               }
+                    this.cliente.a.getCommunicationService().send("mensagem-big", cmd,
+                        this.cliente.s::encode, this.cliente.s::decode,
+                        MemberId.from("member-" +this.cliente.idServidor)).thenAccept(response -> {
+                        System.out.println(((Comando)response).getComando());
+                    });
             } else if (comando.equals("UPDATE")) {
-                response = blockingStub.update(request);
-            } else {
+                                    this.cliente.a.getCommunicationService().send("mensagem-big", cmd,
+                        this.cliente.s::encode, this.cliente.s::decode,
+                        MemberId.from("member-" +this.cliente.idServidor)).thenAccept(response -> {
+                        System.out.println(((Comando)response).getComando());
+                    });
+            }
+            else {
                 logger.log(Level.WARNING, "Comando inválido a ser enviado pro servidor: {0}");
+                
                 return;
             }
-        } catch (StatusRuntimeException e) {
-            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+        } catch (Exception e) {
             return;
         }
-        logger.info("Resposta do servidor: " + response.getResponse());
-
     }
 
     public void selectOrDelete(String chave, String comando) {
         logger.info(comando + " no dado com chave: " + chave);
-        ChaveRequest request = ChaveRequest.newBuilder().setChave(chave).build();
-
-        ServerResponse response = null;
+        Comando cmd = new Comando(comando,new BigInteger(chave));
         try {
             if (comando.equals("SELECT")) {
-                response = blockingStub.select(request);
+                    this.cliente.a.getCommunicationService().send("mensagem-big", cmd,
+                        this.cliente.s::encode, this.cliente.s::decode,
+                        MemberId.from("member-" +this.cliente.idServidor)).thenAccept(response -> {
+                        System.out.println(((Comando)response).getComando());
+                    });
             } else if (comando.equals("DELETE")) {
-                response = blockingStub.delete(request);
-            } else {
+                    this.cliente.a.getCommunicationService().send("mensagem-big", cmd,
+                        this.cliente.s::encode, this.cliente.s::decode,
+                        MemberId.from("member-" +this.cliente.idServidor)).thenAccept(response -> {
+                        System.out.println(((Comando)response).getComando());
+                    });            } else {
                 logger.log(Level.WARNING, "Comando inválido a ser enviado pro servidor: {0}");
                 return;
             }
-        } catch (StatusRuntimeException e) {
-            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+        } catch (Exception e) {
             return;
         }
-        logger.info("Resposta do servidor: " + response.getResponse());
-
     }
     //Imprime mensagem ao receber do servidor
     public void run() {
@@ -145,12 +140,20 @@ public class ImprimeMensagem implements Runnable {
         String cmd[] = comando.split(" ");
         cmd[0] = cmd[0].toUpperCase();
         if (cmd[0].equals("INSERT")) {
-            this.insertOrUpdate(cmd[1],cmd[2], "INSERT");
+            String valor = "";
+            for(int i = 2;i<cmd.length;i++){
+                valor = valor +" "+ cmd[i];
+            }
+            this.insertOrUpdate(cmd[1],valor, "INSERT");
         } else if (cmd[0].equals("DELETE")) {
             this.selectOrDelete(cmd[1], "DELETE");
         } else if (cmd[0].equals("SELECT")) {
             this.selectOrDelete(cmd[1], "SELECT");
         } else if (cmd[0].equals("UPDATE")) {
+            String valor = "";
+            for(int i = 2;i<cmd.length;i++){
+                valor = valor +" "+ cmd[i];
+            }
             this.insertOrUpdate(cmd[1] , cmd[2], "UPDATE");
         } else {
             System.out.println("Comando inválido , portanto não será enviado para o servidor");

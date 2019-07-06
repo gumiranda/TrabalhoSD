@@ -1,0 +1,14 @@
+grpc\LerComandos.class
+grpc\ImprimeMensagem.class
+grpc\Cliente.class
+grpc\Fila.class
+grpc\Log.class
+grpc\SnapShot.class
+grpc\Servidor$1.class
+grpc\Comando.class
+grpc\CopiarLista.class
+grpc\FingerTable.class
+grpc\AplicarAoBanco.class
+grpc\Servidor.class
+grpc\BaseDados.class
+grpc\ComunicaThread.class
