@@ -3,18 +3,13 @@ package grpc;
 import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.logging.Logger;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.math.BigInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
 import java.io.*;
 import java.math.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.ArrayList;
-import java.util.Random;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.Node;
@@ -35,50 +30,69 @@ import java.util.concurrent.TimeUnit;
 
 public class Servidor {
 
+    public int contador = 0;
     private BigInteger quantidade_chaves = new BigInteger("2");
     Set<String> names = new HashSet<String>();
     private BigInteger chave_responsavel = new BigInteger("1"); // Chave em que o servidor eh responsavel
     private static FingerTable tabela; //Tabela de nos 
     private static final Logger logger = Logger.getLogger(Servidor.class.getName());
     private int quantidade_threads = 15;
-    public int porta, saltoProximaPorta, numeroDeNos, numeroBitsId;
     public BaseDados Banco;
     private Fila F2;
     private Fila F3;
-    private Fila F4;
     public Fila F1;
     public String retorno;
     public int primeiraPorta = 59043;
     private String ip;
     private ComunicaThread com;
+    public Serializer s;
+    public Atomix a;
+    public int IdServidor = 0;
 
-    public Servidor(int porta, int porta_servidor) throws IOException, Exception {
-        this.porta = porta;
+    public Servidor(int porta_servidor) throws IOException, Exception {
         this.F1 = new Fila();
         this.F2 = new Fila();
         this.F3 = new Fila();
-        this.F4 = new Fila();
         this.Banco = new BaseDados();
         this.tabela = new FingerTable(this, porta_servidor);
         this.com = new ComunicaThread();
         this.Banco.RecuperarBanco(this.chave_responsavel.toString());
-
-        setConfig("servers.txt");
     }
 
-    public BigInteger getQuantidadeChaves() {
-        return this.quantidade_chaves;
-    }
+    public static void main(String[] args) throws IOException, InterruptedException, Exception {
+        int IdServidor = Integer.parseInt(args[0]);
+        Servidor server1 = new Servidor(-1);
+        server1.IdServidor = IdServidor;
+        ArrayList<Address> enderecos = new ArrayList<>();
+        Serializer s = Serializer.using(Namespace.builder()
+                .register(Namespaces.BASIC)
+                .register(BigInteger.class)
+                .register(MemberId.class)
+                .register(Comando.class)
+                .build());
+        for (int i = 1; i < args.length; i++) {
+            Address end = new Address(args[i], Integer.parseInt(args[i + 1]));
+            enderecos.add(end);
+            i++;
+        }
+        List<Member> members = server1.returnMembers(enderecos.size());
+        AtomixBuilder builder = Atomix.builder();
+        Atomix a = builder.withMemberId("member-" + server1.IdServidor)
+                .withAddress(enderecos.get(server1.IdServidor))
+                .withMembershipProvider(BootstrapDiscoveryProvider.builder()
+                        .withNodes(Lists.newArrayList(members))
+                        .build())
+                .withProfiles(ConsensusProfile.builder().withDataPath("C:\\server" + server1.IdServidor).withMembers(server1.names).build())
+                .build();
 
-    public BigInteger getChave() {
-        return this.chave_responsavel;
+        server1.a = a;
+        server1.s = s;
+        server1.start();
+
     }
 
     public void start() throws IOException {
-        /* The port on which the server should run */
-
         ExecutorService thds = Executors.newFixedThreadPool(this.quantidade_threads);
-
         this.a.start().join();
         System.out.println("Cluster formado");
         this.a.getMembershipService().addListener(event -> {
@@ -108,15 +122,14 @@ public class Servidor {
             }
 
             this.F1.put(cmdRecebido);
-            CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3, this.F4, this.porta);
+            CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3);
             new Thread(copy).start();
             AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
-            new Thread(bancoDados).start();
             SnapShot snapshot = new SnapShot(this.Banco, this.com, this.chave_responsavel.toString());
             new Thread(snapshot).start();
             Log log = new Log(this.F2, this.com, snapshot, this.chave_responsavel.toString());
             new Thread(log).start();
-            String retorno = "Erro ao processar comando";
+            String retorno = "";
             Comando c = F3.getFirst();
             retorno = bancoDados.ProcessaComando(c);
             logger.info("Retorno ao cliente " + retorno);
@@ -125,89 +138,6 @@ public class Servidor {
         }, s::encode);
         logger.info("Server started");
     }
-
-    public BigInteger getRandom(int length) {
-        Random random = new Random();
-        byte[] data = new byte[length];
-        random.nextBytes(data);
-        return new BigInteger(data);
-    }
-
-    public void setConfig(String arq) throws FileNotFoundException, IOException {
-        File arquivo = new File(arq);
-        if (arquivo.exists()) {
-            FileReader arq2 = new FileReader(arquivo);
-            BufferedReader lerArq = new BufferedReader(arq2);
-            PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(arquivo, true)));
-
-            String[] str = null;
-            String linha = "";
-            byte[] dados = null;
-            while ((linha = lerArq.readLine()) != null) {
-                str = linha.split(";");
-            }
-            String[] str2 = str;
-            System.out.println(str);
-            if (str2 != null) {
-
-                this.ip = str2[0];
-                this.saltoProximaPorta = Integer.parseInt(str2[1]);
-                this.numeroBitsId = Integer.parseInt(str2[2]);
-                this.numeroDeNos = Integer.parseInt(str2[3]);
-                this.primeiraPorta = Integer.parseInt(str2[4]);
-            }
-
-        }
-    }
-    public Serializer s;
-    public Atomix a;
-    public int IdServidor = 0;
-
-    public static void main(String[] args) throws IOException, InterruptedException, Exception {
-        int IdServidor = Integer.parseInt(args[0]);
-
-        int porta = 59043;
-        int porta2 = 59045;
-        int flag = 0;
-        Servidor server1 = new Servidor(porta, -1);
-        server1.IdServidor = IdServidor;
-        ArrayList<Address> enderecos = new ArrayList<>();
-        Serializer s = Serializer.using(Namespace.builder()
-                .register(Namespaces.BASIC)
-                .register(BigInteger.class)
-                .register(MemberId.class)
-                .register(Comando.class)
-                .build());
-        for (int i = 1; i < args.length; i++) {
-            Address end = new Address(args[i], Integer.parseInt(args[i + 1]));
-            enderecos.add(end);
-            i++;
-        }
-
-        /* Address end1 = new Address("127.0.0.1",59043);
-  Address end2 = new Address("127.0.0.1",59044);
-  Address end3 = new Address("127.0.0.1",59045);
-
-  enderecos.add(end1);
-  enderecos.add(end2);
-  enderecos.add(end3);*/
-        List<Member> members = server1.returnMembers(3);
-        AtomixBuilder builder = Atomix.builder();
-        Atomix a = builder.withMemberId("member-" + server1.IdServidor)
-                .withAddress(enderecos.get(server1.IdServidor))
-                .withMembershipProvider(BootstrapDiscoveryProvider.builder()
-                        .withNodes(Lists.newArrayList(members))
-                        .build())
-                .withProfiles(ConsensusProfile.builder().withDataPath("C:\\server" + server1.IdServidor).withMembers(server1.names).build())
-                .build();
-
-        server1.a = a;
-        server1.s = s;
-
-        server1.start();
-
-    }
-    public int contador = 0;
 
     private Member nextNode() {
         Address address = Address.from("127.0.0.1", ++this.primeiraPorta);
@@ -225,6 +155,14 @@ public class Servidor {
         }
 
         return members;
+    }
+
+    public BigInteger getQuantidadeChaves() {
+        return this.quantidade_chaves;
+    }
+
+    public BigInteger getChave() {
+        return this.chave_responsavel;
     }
 
 }

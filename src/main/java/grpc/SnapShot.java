@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-/*
+ /*
 import gRPC.proto.ChaveRequest;
 import gRPC.proto.ServerResponse;
 import gRPC.proto.ServicoGrpc;
@@ -18,10 +18,8 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 import org.json.simple.*;
-*/
-
+ */
 package grpc;
-
 
 import java.io.FileWriter;
 import java.io.File;
@@ -33,41 +31,41 @@ import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import org.json.JSONObject;
 
+public class SnapShot implements Runnable {
 
-public class SnapShot implements Runnable{
     private BaseDados banco;
     ComunicaThread com;
     private JSONObject jsonDados;
     private File arquivo;
-    private int ind_arq=0;    
+    private int ind_arq = 0;
     private String id;
-    
-    public SnapShot(BaseDados banco, ComunicaThread com,String id){
+
+    public SnapShot(BaseDados banco, ComunicaThread com, String id) {
         this.banco = banco;
         this.com = com;
         this.jsonDados = new JSONObject();
         this.id = id;
     }
-    
-    public int getContador(){
+
+    public int getContador() {
         return this.ind_arq;
     }
-    
+
     public void criarDiretorio() {
         try {
-            File diretorio = new File("SNAP_"+this.id);
+            File diretorio = new File("SNAP_" + this.id);
             diretorio.mkdir();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(null, "Erro ao criar o diretorio");
             System.out.println(ex);
         }
     }
-    
-    public void run(){
+
+    public void run() {
         //int ind_arq = 0;
-        while(true){
-            File diretorio = new File("SNAP_"+this.id);
-            if(!diretorio.exists()){
+        while (true) {
+            File diretorio = new File("SNAP_" + this.id);
+            if (!diretorio.exists()) {
                 this.criarDiretorio();
             }
             try {
@@ -77,36 +75,39 @@ public class SnapShot implements Runnable{
             }
             //Remove os arquivos passados para sobrescrever
             File arq_remover;
-            this.arquivo = new File("SNAP_"+this.id+"//"+"SnapShot"+ind_arq+".json");
-            int ind_arq_remove = ind_arq -3;
-            
-            if(ind_arq%3 == 0 && ind_arq >= 3){
-                arq_remover = new File ("SNAP_"+this.id+"//"+"SnapShot"+ind_arq_remove+".json");
-                if(arq_remover.exists())
+            this.arquivo = new File("SNAP_" + this.id + "//" + "SnapShot" + ind_arq + ".json");
+            int ind_arq_remove = ind_arq - 3;
+
+            if (ind_arq % 3 == 0 && ind_arq >= 3) {
+                arq_remover = new File("SNAP_" + this.id + "//" + "SnapShot" + ind_arq_remove + ".json");
+                if (arq_remover.exists()) {
                     arq_remover.delete();
-            }else if(ind_arq%3 == 1 && ind_arq >= 3){
-                arq_remover = new File ("SNAP_"+this.id+"//"+"SnapShot"+ind_arq_remove+".json");
-                if(arq_remover.exists())
+                }
+            } else if (ind_arq % 3 == 1 && ind_arq >= 3) {
+                arq_remover = new File("SNAP_" + this.id + "//" + "SnapShot" + ind_arq_remove + ".json");
+                if (arq_remover.exists()) {
                     arq_remover.delete();
-            }else if(ind_arq%3 == 2 && ind_arq >= 3){
-                arq_remover = new File ("SNAP_"+this.id+"//"+"SnapShot"+ind_arq_remove+".json");
-                if(arq_remover.exists())
+                }
+            } else if (ind_arq % 3 == 2 && ind_arq >= 3) {
+                arq_remover = new File("SNAP_" + this.id + "//" + "SnapShot" + ind_arq_remove + ".json");
+                if (arq_remover.exists()) {
                     arq_remover.delete();
+                }
             }
             //-------
-            if(!this.arquivo.exists()){
-               try {
+            if (!this.arquivo.exists()) {
+                try {
                     this.arquivo.createNewFile();
                 } catch (IOException ex) {
                     Logger.getLogger(Log.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
             //Escreve no JSON
-            for (BigInteger key : this.banco.getKeys()){
+            for (BigInteger key : this.banco.getKeys()) {
                 byte[] value = this.banco.get(key);
                 try {
                     String texto = new String(value, "UTF-8");
-                    jsonDados.put(key.toString(),texto);
+                    jsonDados.put(key.toString(), texto);
                 } catch (UnsupportedEncodingException ex) {
                     Logger.getLogger(SnapShot.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -114,7 +115,7 @@ public class SnapShot implements Runnable{
             //-------
             FileWriter arqDados = null;
             try {
-                arqDados = new FileWriter(this.arquivo,false);
+                arqDados = new FileWriter(this.arquivo, false);
             } catch (IOException ex) {
                 Logger.getLogger(SnapShot.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -125,7 +126,7 @@ public class SnapShot implements Runnable{
             } catch (IOException ex) {
                 Logger.getLogger(SnapShot.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
+
             this.com.indicaFinal();
             ind_arq++;
         }

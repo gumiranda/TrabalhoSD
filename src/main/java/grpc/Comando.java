@@ -14,38 +14,47 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 
 public class Comando {
+
     private String comando;
     private String valor;
     private BigInteger chave;
-public Comando(){
 
-}
-     public Comando(String comando,String valor,BigInteger chave){
+    public Comando() {
+
+    }
+
+    public Comando(String comando, String valor, BigInteger chave) {
         this.valor = valor;
         this.chave = chave;
         this.comando = comando;
     }
-          public Comando(String comando,BigInteger chave){
+
+    public Comando(String comando, BigInteger chave) {
         this.chave = chave;
         this.comando = comando;
     }
-    public synchronized String getComando(){
+
+    public synchronized String getComando() {
         return this.comando;
     }
-    public synchronized BigInteger getChave(){
+
+    public synchronized BigInteger getChave() {
         return this.chave;
     }
-    public synchronized String getValor(){
+
+    public synchronized String getValor() {
         return this.valor;
     }
-    public synchronized void setValor(String valor){
-    this.valor=valor;
-    }
-    public synchronized void setChave(BigInteger valor){
-    this.chave=valor;
+
+    public synchronized void setValor(String valor) {
+        this.valor = valor;
     }
 
-    public void imprimir(){
-        System.out.println("COMANDO: "+this.comando);
+    public synchronized void setChave(BigInteger valor) {
+        this.chave = valor;
+    }
+
+    public void imprimir() {
+        System.out.println("COMANDO: " + this.comando);
     }
 }
