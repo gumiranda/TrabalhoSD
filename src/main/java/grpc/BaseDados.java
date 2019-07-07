@@ -58,6 +58,7 @@ public class BaseDados{
             StringBuilder sb = new StringBuilder(); 
             String line;
             line = br.readLine();
+            if(line != null){
             JSONObject my_obj = new JSONObject(line);
             Set<String> chaves = my_obj.keySet();
             Iterator<String> c = chaves.iterator();
@@ -102,14 +103,14 @@ public class BaseDados{
                         this.processa.ProcessaComando(linha);
                     }
                 }
-                
+             
                 for(int i =0;i<arquivos.length;i++){
                     File arquivo = new File("LOG_"+id+"//"+arquivos[i].getName());
                     arquivo.delete();
                 }
                  
             }
-
+            }
            
             
         }    

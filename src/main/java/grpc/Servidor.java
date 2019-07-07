@@ -1,5 +1,6 @@
 package grpc;
 
+import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.util.logging.Logger;
 import java.io.File;
@@ -11,9 +12,11 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.io.*;
 import java.math.*;
+import java.util.concurrent.CountDownLatch;
 import java.util.ArrayList;
 import java.util.Random;
 import io.atomix.cluster.MemberId;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.core.Atomix;
@@ -24,11 +27,16 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class Servidor {
 
-    private BigInteger quantidade_chaves = new BigInteger("2"); //Quantidade de chaves que o chord tera(Maior chave)
+    private BigInteger quantidade_chaves = new BigInteger("2");
+    Set<String> names = new HashSet<String>();
     private BigInteger chave_responsavel = new BigInteger("1"); // Chave em que o servidor eh responsavel
     private static FingerTable tabela; //Tabela de nos 
     private static final Logger logger = Logger.getLogger(Servidor.class.getName());
@@ -54,7 +62,7 @@ public class Servidor {
         this.tabela = new FingerTable(this, porta_servidor);
         this.com = new ComunicaThread();
         this.Banco.RecuperarBanco(this.chave_responsavel.toString());
-        
+
         setConfig("servers.txt");
     }
 
@@ -70,7 +78,7 @@ public class Servidor {
         /* The port on which the server should run */
 
         ExecutorService thds = Executors.newFixedThreadPool(this.quantidade_threads);
-        
+
         this.a.start().join();
         System.out.println("Cluster formado");
         this.a.getMembershipService().addListener(event -> {
@@ -83,12 +91,12 @@ public class Servidor {
                     break;
             }
         });
-         DistributedMap<BigInteger, byte[]> map = a.<BigInteger,byte[]>mapBuilder("map-database")
+        DistributedMap<BigInteger, byte[]> map = a.<BigInteger, byte[]>mapBuilder("map-database")
                 .withCacheEnabled()
                 .build();
         this.Banco = new BaseDados(map);
 
-           a.getCommunicationService().subscribe("mensagem-big", s::decode, cmd -> {
+        a.getCommunicationService().subscribe("mensagem-big", s::decode, cmd -> {
 
             Comando cmdRecebido = (Comando) cmd;
 
@@ -96,31 +104,27 @@ public class Servidor {
 
             if (cmdRecebido == null) {
                 logger.info("Comando inválido");
-                return CompletableFuture.completedFuture(new Comando("COMANDO INVÁLIDO",new BigInteger("-1")));
+                return CompletableFuture.completedFuture(new Comando("COMANDO INVÁLIDO", new BigInteger("-1")));
             }
-            
-        this.F1.put(cmdRecebido);
-        CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3, this.F4, this.porta);
-        new Thread(copy).start();
-        AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
-        new Thread(bancoDados).start();
-        SnapShot snapshot = new SnapShot(this.Banco, this.com, this.chave_responsavel.toString());
-        new Thread(snapshot).start();
-        Log log = new Log(this.F2, this.com, snapshot, this.chave_responsavel.toString());
-        new Thread(log).start();
-        String retorno = "Erro ao processar comando";
-            while (this.retorno != null) {
-               retorno = this.retorno;
-                this.retorno = null;
-                 logger.info("Retorno ao cliente " + retorno);
-            }
-         return CompletableFuture.completedFuture(new Comando(retorno,new BigInteger("-1")));
+
+            this.F1.put(cmdRecebido);
+            CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3, this.F4, this.porta);
+            new Thread(copy).start();
+            AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
+            new Thread(bancoDados).start();
+            SnapShot snapshot = new SnapShot(this.Banco, this.com, this.chave_responsavel.toString());
+            new Thread(snapshot).start();
+            Log log = new Log(this.F2, this.com, snapshot, this.chave_responsavel.toString());
+            new Thread(log).start();
+            String retorno = "Erro ao processar comando";
+            Comando c = F3.getFirst();
+            retorno = bancoDados.ProcessaComando(c);
+            logger.info("Retorno ao cliente " + retorno);
+            return CompletableFuture.completedFuture(new Comando(retorno, new BigInteger("-1")));
 
         }, s::encode);
-        logger.info("Server started, listening on " + this.porta);
+        logger.info("Server started");
     }
-
-
 
     public BigInteger getRandom(int length) {
         Random random = new Random();
@@ -155,11 +159,18 @@ public class Servidor {
 
         }
     }
-public Serializer s;
-public Atomix a;
+    public Serializer s;
+    public Atomix a;
+    public int IdServidor = 0;
 
     public static void main(String[] args) throws IOException, InterruptedException, Exception {
         int IdServidor = Integer.parseInt(args[0]);
+
+        int porta = 59043;
+        int porta2 = 59045;
+        int flag = 0;
+        Servidor server1 = new Servidor(porta, -1);
+        server1.IdServidor = IdServidor;
         ArrayList<Address> enderecos = new ArrayList<>();
         Serializer s = Serializer.using(Namespace.builder()
                 .register(Namespaces.BASIC)
@@ -172,35 +183,48 @@ public Atomix a;
             enderecos.add(end);
             i++;
         }
+
+        /* Address end1 = new Address("127.0.0.1",59043);
+  Address end2 = new Address("127.0.0.1",59044);
+  Address end3 = new Address("127.0.0.1",59045);
+
+  enderecos.add(end1);
+  enderecos.add(end2);
+  enderecos.add(end3);*/
+        List<Member> members = server1.returnMembers(3);
         AtomixBuilder builder = Atomix.builder();
-        Atomix a = builder.withMemberId("member-" + IdServidor)
-                .withAddress(enderecos.get(IdServidor))
+        Atomix a = builder.withMemberId("member-" + server1.IdServidor)
+                .withAddress(enderecos.get(server1.IdServidor))
                 .withMembershipProvider(BootstrapDiscoveryProvider.builder()
-                        .withNodes(Node.builder()
-                                .withId("member-0")
-                                .withAddress(enderecos.get(0))
-                                .build(),
-                                Node.builder()
-                                        .withId("member-1")
-                                        .withAddress(enderecos.get(1))
-                                        .build(),
-                                Node.builder()
-                                        .withId("member-2")
-                                        .withAddress(enderecos.get(2))
-                                        .build())
+                        .withNodes(Lists.newArrayList(members))
                         .build())
-                .withProfiles(ConsensusProfile.builder().withDataPath("C:\\server" + IdServidor).withMembers("member-1", "member-2", "member-3").build())
+                .withProfiles(ConsensusProfile.builder().withDataPath("C:\\server" + server1.IdServidor).withMembers(server1.names).build())
                 .build();
 
-        int porta = 59043;
-        int porta2 = 59045;
-        int flag = 0;
-        Servidor server1 = new Servidor(porta, -1);
         server1.a = a;
         server1.s = s;
+
         server1.start();
 
     }
+    public int contador = 0;
 
-  
+    private Member nextNode() {
+        Address address = Address.from("127.0.0.1", ++this.primeiraPorta);
+        return Member.builder(MemberId.from(String.valueOf(++this.contador)))
+                .withAddress(address)
+                .build();
+    }
+
+    private List<Member> returnMembers(int nodes) throws Exception {
+        List<Member> members = new ArrayList<>();
+
+        for (int i = 0; i < nodes; i++) {
+            names.add("member-" + this.contador);
+            members.add(nextNode());
+        }
+
+        return members;
+    }
+
 }

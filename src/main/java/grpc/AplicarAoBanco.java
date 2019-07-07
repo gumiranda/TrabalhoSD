@@ -138,9 +138,9 @@ public class AplicarAoBanco implements Runnable {
 
     public void run() {
         while (true) {
-            Comando c = F3.getFirst(); //Tratamento para tentar evitar memoria Leak:
-            String retorno = this.ProcessaComando(c);
-            this.servidor.retorno = retorno;
+          //  Comando c = F3.getFirst(); //Tratamento para tentar evitar memoria Leak:
+            //String retorno = this.ProcessaComando(c);
+            //this.servidor.retorno = retorno;
         }
 
     }
