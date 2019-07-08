@@ -1,23 +1,21 @@
 package grpc;
 
-import com.google.common.collect.Lists;
 import java.util.concurrent.TimeUnit;
 import java.math.BigInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import grpc.ImprimeMensagem;
-import io.atomix.cluster.Member;
 import java.io.IOException;
 import java.net.Socket;
-import io.atomix.cluster.MemberId;
-import io.atomix.cluster.Node;
-import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.core.Atomix;
-import io.atomix.core.AtomixBuilder;
-import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.Namespaces;
-import io.atomix.utils.serializer.Serializer;
+import java.util.concurrent.CompletableFuture;
+import java.util.LinkedList;
+import java.util.List;
+
+import grpc.command.*;
+import io.atomix.catalyst.transport.Address;
+import io.atomix.catalyst.transport.netty.NettyTransport;
+import io.atomix.copycat.client.CopycatClient;
+import io.atomix.copycat.server.StateMachine;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,14 +26,13 @@ public class Cliente {
     public int primeiraPorta = 59043;
     public String host;
     private ComunicaThread com = new ComunicaThread();
-    public Atomix a;
     public int contador = 0;
     Set<String> names = new HashSet<String>();
     private static final String IP = "127.0.0.1";
     private static final Logger logger = Logger.getLogger(Cliente.class.getName());
     public String comando;
     public String idServidor;
-    public Serializer s;
+    public CopycatClient client;
 
     public Cliente(String host, int port) {
         this.comando = null;
@@ -55,31 +52,51 @@ public class Cliente {
         this.comando = command;
     }
 
+    public Cliente() {
+
+    }
+
     public static void main(String[] args) throws Exception {
-        int IdCliente = Integer.parseInt(args[0]);
         ArrayList<Address> enderecos = new ArrayList<>();
-        Serializer s = Serializer.using(Namespace.builder().register(Namespaces.BASIC).register(BigInteger.class).register(MemberId.class).register(Comando.class).build());
-        for (int i = 2; i < args.length; i++) {
-            Address endereco = new Address(args[i], Integer.parseInt(args[i + 1]));
-            enderecos.add(endereco);
-            i++;
+        boolean teste = false;
+        if (args.length == 7) {
+            for (int i = 0; i < 6; i += 2) {
+                System.out.println(args[i] + " - " + args[i + 1]);
+                Address endereco = new Address(args[i], Integer.parseInt(args[i + 1]));
+                enderecos.add(endereco);
+            }
+            teste = true;
+        } else {
+            for (int i = 0; i < args.length; i += 2) {
+                System.out.println(args[i] + " - " + args[i + 1]);
+                Address endereco = new Address(args[i], Integer.parseInt(args[i + 1]));
+                enderecos.add(endereco);
+            }
         }
-        Cliente cliente = new Cliente("127.0.0.1", enderecos.get(0).port());
-        cliente.s = s;
-        List<Member> members = cliente.returnMembers(enderecos.size());
-        cliente.idServidor = args[1];
-        AtomixBuilder builder = Atomix.builder();
-        Address endereco = new Address(IP, (3000 + IdCliente));
-        Atomix a = builder.withMemberId("IdCliente-" + IdCliente)
-                .withAddress(endereco).withMembershipProvider(BootstrapDiscoveryProvider.builder()
-                .withNodes(Lists.newArrayList(members))
-                .build())
-                .build();
-        cliente.a = a;
-        a.start().join();
-        System.out.println("Cluster formado");
+
+        Cliente cliente = new Cliente();
+
+        CopycatClient.Builder builder = CopycatClient.builder()
+                .withTransport(NettyTransport.builder()
+                        .withThreads(4)
+                        .build());
+
+        CopycatClient client = builder.build();
+        cliente.client = client;
+        CompletableFuture<CopycatClient> future = client.connect(enderecos);
+        future.join();
         try {
-            cliente.executa(cliente);
+            if (!teste) {
+                cliente.executa(cliente);
+            } else {
+                client.submit(new CreateCommand(new BigInteger("123"), "Teste1")).thenRun(() -> System.out.println("Insert realizado"));;
+                client.submit(new ReadQuery(new BigInteger("123"))).thenAccept(result -> System.out.println(result.toStringValue()));
+                client.submit(new CreateCommand(new BigInteger("124"), "Teste2")).thenRun(() -> System.out.println("Insert realizado"));;
+                client.submit(new UpdateCommand(new BigInteger("124"), "AltTeste3")).thenRun(() -> System.out.println("Update realizado"));;
+                client.submit(new ReadQuery(new BigInteger("124"))).thenAccept(result -> System.out.println(result.toStringValue()));
+                client.submit(new DeleteCommand(new BigInteger("124"))).thenRun(() -> System.out.println("Delete realizado"));
+           
+            }
         } catch (Exception e) {
             System.out.println(e);
             System.exit(0);
@@ -101,27 +118,5 @@ public class Cliente {
 
     }
 
-    public void enviaComando(Cliente cliente) throws IOException, InterruptedException {
-        ImprimeMensagem imprimir = new ImprimeMensagem(cliente, this.com);
-        imprimir.enviaComando(this.comando);
-        this.comando = null;
-    }
-        private Member nextNode() {
-        Address address = Address.from("127.0.0.1", ++this.primeiraPorta);
-        return Member.builder(MemberId.from(String.valueOf(++this.contador)))
-                .withAddress(address)
-                .build();
-    }
-
-    private List<Member> returnMembers(int nodes) throws Exception {
-        List<Member> members = new ArrayList<>();
-
-        for (int i = 0; i < nodes; i++) {
-            names.add("member-" + this.contador);
-            members.add(nextNode());
-        }
-
-        return members;
-    }
 
 }

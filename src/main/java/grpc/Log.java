@@ -10,12 +10,13 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 
 public class Log implements Runnable{
-    private Fila F2;
+	  private static BlockingQueue < Comando > F2;
     private File arquivo;
     ComunicaThread com;
     SnapShot snap;
@@ -24,7 +25,7 @@ public class Log implements Runnable{
     private ArrayList<Integer> c = new ArrayList();
     
     
-    public Log(Fila F2, ComunicaThread com,SnapShot s,String id){
+    public Log(BlockingQueue<Comando> F2, ComunicaThread com,SnapShot s,String id){
        this.com = com;
        this.F2 = F2;
        this.snap= s;
@@ -61,7 +62,10 @@ public class Log implements Runnable{
     public void run(){
         while(true){
             com.tentaExecutar();
-            Comando c = F2.getFirst();
+            Comando c;
+            try {
+                c = F2.take();
+            
             String comando = c.getComando();
             String comandos[] = comando.split(" ");
             int contador_snap = this.snap.getContador();
@@ -127,7 +131,9 @@ public class Log implements Runnable{
             comandos = null;
             System.gc();
             com.FinalLeitura();
-            
+} catch (InterruptedException ex) {
+                Logger.getLogger(Log.class.getName()).log(Level.SEVERE, null, ex);
+            }            
         }
     }
 

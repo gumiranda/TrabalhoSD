@@ -28,7 +28,10 @@ public class Comando {
         this.chave = chave;
         this.comando = comando;
     }
-
+     public Comando(BigInteger chave,String valor){
+                 this.valor = valor;
+        this.chave = chave;
+     }
     public Comando(String comando, BigInteger chave) {
         this.chave = chave;
         this.comando = comando;

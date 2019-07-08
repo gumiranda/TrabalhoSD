@@ -1,6 +1,5 @@
 package grpc;
 
-import io.atomix.core.map.DistributedMap;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -152,7 +151,9 @@ public class BaseDados {
 
         return d.getBytes();
     }
-
+public byte[] read(BigInteger o1) {
+		return this.Banco.get(o1);
+	}
     public Map<BigInteger, byte[]> getMap() {
         return this.Banco;
     }
@@ -186,11 +187,10 @@ public class BaseDados {
 
         try {
             this.Banco.remove(chave);
-            return "Deletado com Sucesso";
+            return chave.toString();
         } catch (Exception e) {
             return "Delete FALHOU";
         }
-
     }
 
     public synchronized boolean verifica(BigInteger chave) {
@@ -200,7 +200,6 @@ public class BaseDados {
     public synchronized byte[] get(BigInteger chave) {
         byte[] dados = this.Banco.get(chave);
         return dados;
-
     }
 
     public synchronized void imprimir() throws UnsupportedEncodingException {

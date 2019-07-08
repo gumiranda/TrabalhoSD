@@ -4,11 +4,22 @@
  * and open the template in the editor.
  */
 package grpc;
-
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
 /**
  *
  * @author Samsung
  */
-public class Teste {
-    
+public class Teste extends TestCase {
+
+    public Teste( String testName ) {
+      super(testName);
+    }
+
+    public static Test suite(){
+      return new TestSuite(Teste.class);
+    }
+
+   
 }

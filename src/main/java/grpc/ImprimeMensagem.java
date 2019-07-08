@@ -6,7 +6,10 @@
 package grpc;
 
 
-import io.atomix.cluster.MemberId;
+import grpc.command.CreateCommand;
+import grpc.command.DeleteCommand;
+import grpc.command.ReadQuery;
+import grpc.command.UpdateCommand;
 import java.util.Scanner;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,17 +41,9 @@ public class ImprimeMensagem implements Runnable {
         
         try {
             if (comando.equals("INSERT")) {
-                    this.cliente.a.getCommunicationService().send("mensagem-big", cmd,
-                        this.cliente.s::encode, this.cliente.s::decode,
-                        MemberId.from("member-" +this.cliente.idServidor)).thenAccept(response -> {
-                        System.out.println(((Comando)response).getComando());
-                    });
+this.cliente.client.submit(new CreateCommand(new BigInteger(chave),valor)).thenRun(() -> System.out.println("Insert realizado com sucesso"));
             } else if (comando.equals("UPDATE")) {
-                                    this.cliente.a.getCommunicationService().send("mensagem-big", cmd,
-                        this.cliente.s::encode, this.cliente.s::decode,
-                        MemberId.from("member-" +this.cliente.idServidor)).thenAccept(response -> {
-                        System.out.println(((Comando)response).getComando());
-                    });
+this.cliente.client.submit(new UpdateCommand(new BigInteger(chave),valor)).thenRun(() -> System.out.println("Update realizado com sucesso"));
             }
             else {
                 logger.log(Level.WARNING, "Comando inválido a ser enviado pro servidor: {0}");
@@ -65,17 +60,11 @@ public class ImprimeMensagem implements Runnable {
         Comando cmd = new Comando(comando,new BigInteger(chave));
         try {
             if (comando.equals("SELECT")) {
-                    this.cliente.a.getCommunicationService().send("mensagem-big", cmd,
-                        this.cliente.s::encode, this.cliente.s::decode,
-                        MemberId.from("member-" +this.cliente.idServidor)).thenAccept(response -> {
-                        System.out.println(((Comando)response).getComando());
-                    });
+this.cliente.client.submit(new ReadQuery(new BigInteger(chave))).thenAccept(result -> System.out.println(result.toStringValue()));
+
             } else if (comando.equals("DELETE")) {
-                    this.cliente.a.getCommunicationService().send("mensagem-big", cmd,
-                        this.cliente.s::encode, this.cliente.s::decode,
-                        MemberId.from("member-" +this.cliente.idServidor)).thenAccept(response -> {
-                        System.out.println(((Comando)response).getComando());
-                    });            } else {
+this.cliente.client.submit(new DeleteCommand(new BigInteger(chave))).thenRun(() -> System.out.println("Delete realizado com sucesso"));
+          } else {
                 logger.log(Level.WARNING, "Comando inválido a ser enviado pro servidor: {0}");
                 return;
             }

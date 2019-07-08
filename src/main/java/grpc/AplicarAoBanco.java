@@ -11,14 +11,16 @@ import java.io.PrintStream;
 import java.io.FileInputStream;
 import java.io.DataInputStream;
 import java.io.FileNotFoundException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class AplicarAoBanco {
 
     private BaseDados banco;
-    private Fila F3;
+	  private static BlockingQueue < Comando > F3;
     private Servidor servidor;
 
-    public AplicarAoBanco(BaseDados banco, Fila F3, Servidor s) {
+    public AplicarAoBanco(BaseDados banco, BlockingQueue<Comando> F3, Servidor s) {
         this.banco = banco;
         this.F3 = F3;
         this.servidor = s;
@@ -94,7 +96,8 @@ public class AplicarAoBanco {
                 if (this.banco.verifica(chave)) {
                     retorno_select = this.banco.get(chave);
                     try {
-                        retorno = new String(retorno_select, "UTF-8");
+                        retorno = new String(retorno_select, "ISO-8859-1");
+                        System.out.println("RETORNO: "+retorno);
                     } catch (UnsupportedEncodingException ex) {
                         Logger.getLogger(AplicarAoBanco.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -133,7 +136,7 @@ public class AplicarAoBanco {
             System.gc();
             return retorno;
         } catch (Exception e) {
-            System.out.println("ExceÃ§ao : " + e);
+            System.out.println("Exceçao : " + e);
         }
         return retorno;
     }
