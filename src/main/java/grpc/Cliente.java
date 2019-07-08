@@ -23,52 +23,22 @@ import java.util.Set;
 
 public class Cliente {
 
-    public int primeiraPorta = 59043;
-    public String host;
     private ComunicaThread com = new ComunicaThread();
-    public int contador = 0;
-    Set<String> names = new HashSet<String>();
-    private static final String IP = "127.0.0.1";
-    private static final Logger logger = Logger.getLogger(Cliente.class.getName());
     public String comando;
     public String idServidor;
     public CopycatClient client;
-
-    public Cliente(String host, int port) {
-        this.comando = null;
-        this.host = host;
-        this.primeiraPorta = port;
-    }
-
-    public Cliente(String host, int port, Comando comando) {
-
-        String command;
-        command = comando.getComando() + " " + comando.getChave();
-        if (comando.getValor() != null) {
-            command = command + " " + comando.getValor();
-        }
-        this.host = host;
-        this.primeiraPorta = port;
-        this.comando = command;
-    }
-
-    public Cliente() {
-
-    }
 
     public static void main(String[] args) throws Exception {
         ArrayList<Address> enderecos = new ArrayList<>();
         boolean teste = false;
         if (args.length == 7) {
             for (int i = 0; i < 6; i += 2) {
-                System.out.println(args[i] + " - " + args[i + 1]);
                 Address endereco = new Address(args[i], Integer.parseInt(args[i + 1]));
                 enderecos.add(endereco);
             }
             teste = true;
         } else {
             for (int i = 0; i < args.length; i += 2) {
-                System.out.println(args[i] + " - " + args[i + 1]);
                 Address endereco = new Address(args[i], Integer.parseInt(args[i + 1]));
                 enderecos.add(endereco);
             }
@@ -89,18 +59,20 @@ public class Cliente {
             if (!teste) {
                 cliente.executa(cliente);
             } else {
-                client.submit(new CreateCommand(new BigInteger("123"), "Teste1")).thenRun(() -> System.out.println("Insert realizado"));;
-                client.submit(new ReadQuery(new BigInteger("123"))).thenAccept(result -> System.out.println(result.toStringValue()));
-                client.submit(new CreateCommand(new BigInteger("124"), "Teste2")).thenRun(() -> System.out.println("Insert realizado"));;
-                client.submit(new UpdateCommand(new BigInteger("124"), "AltTeste3")).thenRun(() -> System.out.println("Update realizado"));;
-                client.submit(new ReadQuery(new BigInteger("124"))).thenAccept(result -> System.out.println(result.toStringValue()));
-                client.submit(new DeleteCommand(new BigInteger("124"))).thenRun(() -> System.out.println("Delete realizado"));
-           
+            cliente.testa();
             }
         } catch (Exception e) {
             System.out.println(e);
             System.exit(0);
         }
+    }
+
+    public void testa() {
+        client.submit(new CreateCommand(new BigInteger("1236"), "TestInsert1")).thenRun(() -> System.out.println("Insert realizado"));
+        client.submit(new ReadQuery(new BigInteger("1236"))).thenAccept(result -> System.out.println(result.toString()));
+        client.submit(new CreateCommand(new BigInteger("1247"), "Teste2")).thenRun(() -> System.out.println("Insert realizado"));
+        client.submit(new UpdateCommand(new BigInteger("1247"), "AltTeste3")).thenRun(() -> System.out.println("Update realizado"));
+        client.submit(new DeleteCommand(new BigInteger("1247"))).thenRun(() -> System.out.println("Delete realizado"));
     }
 
     public void executa(Cliente cliente) throws IOException, InterruptedException {
@@ -117,6 +89,5 @@ public class Cliente {
         c.stop();
 
     }
-
 
 }

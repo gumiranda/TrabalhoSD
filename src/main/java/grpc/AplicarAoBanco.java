@@ -17,7 +17,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 public class AplicarAoBanco {
 
     private BaseDados banco;
-	  private static BlockingQueue < Comando > F3;
+    private static BlockingQueue< Comando> F3;
     private Servidor servidor;
 
     public AplicarAoBanco(BaseDados banco, BlockingQueue<Comando> F3, Servidor s) {
@@ -44,7 +44,6 @@ public class AplicarAoBanco {
                 retorno_select = this.banco.get(chave);
                 try {
                     retorno = new String(retorno_select, "UTF-8");
-
                 } catch (UnsupportedEncodingException ex) {
                     Logger.getLogger(AplicarAoBanco.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -97,7 +96,7 @@ public class AplicarAoBanco {
                     retorno_select = this.banco.get(chave);
                     try {
                         retorno = new String(retorno_select, "ISO-8859-1");
-                        System.out.println("RETORNO: "+retorno);
+                        System.out.println("RETORNO: " + retorno);
                     } catch (UnsupportedEncodingException ex) {
                         Logger.getLogger(AplicarAoBanco.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -136,7 +135,7 @@ public class AplicarAoBanco {
             System.gc();
             return retorno;
         } catch (Exception e) {
-            System.out.println("Exceçao : " + e);
+            System.out.println("Excecao : " + e);
         }
         return retorno;
     }

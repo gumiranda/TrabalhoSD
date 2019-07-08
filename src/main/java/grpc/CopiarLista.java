@@ -8,9 +8,9 @@ import java.util.concurrent.LinkedBlockingDeque;
 
 public class CopiarLista implements Runnable {
 
-   private static BlockingQueue < Comando > F1;
-	  private static BlockingQueue < Comando > F2;
-	  private static BlockingQueue < Comando > F3;
+    private static BlockingQueue<Comando> F1;
+    private static BlockingQueue<Comando> F2;
+    private static BlockingQueue<Comando> F3;
 
     public CopiarLista(BlockingQueue<Comando> F1, BlockingQueue<Comando> F2, BlockingQueue<Comando> F3) {
         this.F1 = F1;

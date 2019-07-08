@@ -91,7 +91,6 @@ public class BaseDados {
                         String nome = arquivos[i].getName();
                         nome = nome.replace("Log", "");
                         nome = nome.replace(".txt", "");
-                        System.out.println(nome);
                         indices.add(Integer.parseInt(nome));
                     }
                     int maior_indice = getMaior(contadores);
@@ -151,9 +150,12 @@ public class BaseDados {
 
         return d.getBytes();
     }
-public byte[] read(BigInteger o1) {
-		return this.Banco.get(o1);
-	}
+
+    public String read(BigInteger chave) throws UnsupportedEncodingException {
+        String dado = new String(this.Banco.get(chave), "UTF-8");
+          return dado;
+    }
+
     public Map<BigInteger, byte[]> getMap() {
         return this.Banco;
     }

@@ -18,6 +18,7 @@ import io.atomix.copycat.server.StateMachine;
 import io.atomix.copycat.server.storage.Storage;
 import io.atomix.copycat.server.storage.StorageLevel;
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -85,6 +86,7 @@ public class Servidor extends StateMachine {
     }
 
     public void start() throws IOException {
+
         ExecutorService thds = Executors.newFixedThreadPool(this.quantidade_threads);
         CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3);
         new Thread(copy).start();
@@ -93,28 +95,29 @@ public class Servidor extends StateMachine {
         new Thread(snapshot).start();
         Log log = new Log(this.F2, this.com, snapshot, this.chave_responsavel.toString());
         new Thread(log).start();
-        //Comando c = F3.getFirst();
-        //retorno = bancoDados.ProcessaComando(c);
         if (this.IdServidor == 0) {
+            System.out.println("Server started");
             server.bootstrap().join();
         } else {
+            System.out.println("Server started2");
             server.join(this.enderecos).join();
         }
 
     }
 
-    public Boolean Create(Commit<CreateCommand> commit) {
+    public Boolean Create(Commit<CreateCommand> commit) throws UnsupportedEncodingException {
         try {
-            int k = 10;
             CreateCommand aec = commit.operation();
+            String dado = new String(aec.value, "UTF-8");
+            System.out.println("Valor: " +dado);
             Comando cmd = new Comando("INSERT", aec.value.toString(), aec.key);
             AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
             String retorno = bancoDados.ProcessaComando(cmd);
-            Data e = new Data(aec.key, aec.value);
+            Data e = new Data(aec.key, dado.getBytes());
             this.F1.add(cmd);
-
             if (retorno == "INSERT realizado com Sucesso") {
-                System.out.println("Inserido ");
+                System.out.println("Inserido");
+                Data result = new Data(aec.key, this.Banco.read(aec.key).getBytes());
                 return true;
             } else {
                 return false;
@@ -125,9 +128,11 @@ public class Servidor extends StateMachine {
         }
     }
 
-    public Data Read(Commit<ReadQuery> commit) {
+    public Data Read(Commit<ReadQuery> commit) throws UnsupportedEncodingException {
         try {
             ReadQuery geq = commit.operation();
+            String dado = this.Banco.read(geq.key);
+            System.out.println("valor = "+dado);
             Comando cmd = new Comando("SELECT", geq.key);
             AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
             String retorno = bancoDados.ProcessaComando(cmd);
@@ -137,7 +142,7 @@ public class Servidor extends StateMachine {
                 System.out.println(retorno);
                 return result;
             } else {
-                Data result = new Data(geq.key, this.Banco.read(geq.key));
+                Data result = new Data(geq.key,dado.getBytes());
                 this.F1.add(cmd);
                 System.out.println(retorno);
                 return result;
@@ -148,25 +153,26 @@ public class Servidor extends StateMachine {
         }
     }
 
-    public Boolean Update(Commit<UpdateCommand> commit) {
+    public Boolean Update(Commit<UpdateCommand> commit) throws UnsupportedEncodingException {
         try {
             UpdateCommand aec = commit.operation();
             Comando cmd = new Comando("UPDATE", aec.value.toString(), aec.key);
             AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
             String retorno = bancoDados.ProcessaComando(cmd);
             this.F1.add(cmd);
-            Data result = new Data(aec.key, this.Banco.read(aec.key));
             if (retorno == "UPDATE Com Sucesso") {
+                System.out.println("Atualizado");
+                Data result = new Data(aec.key, this.Banco.read(aec.key).getBytes());
                 return true;
             } else {
-                return false;
+                return true;
             }
         } finally {
             commit.close();
         }
     }
 
-    public Boolean Delete(Commit<DeleteCommand> commit) {
+    public Boolean Delete(Commit<DeleteCommand> commit) throws UnsupportedEncodingException {
         try {
             DeleteCommand aec = commit.operation();
             Comando cmd = new Comando("DELETE", aec.key);
@@ -174,7 +180,14 @@ public class Servidor extends StateMachine {
             AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
             String retorno = bancoDados.ProcessaComando(cmd);
             Data e = new Data(aec.key, retorno.getBytes());
-            return true;
+            if (retorno == "Nao existe chave para ser deletada") {
+                System.out.println("Deletado");
+                Data result = new Data(aec.key, this.Banco.read(aec.key).getBytes());
+                return true;
+            } else {
+                return false;
+            }
+
         } finally {
             commit.close();
         }

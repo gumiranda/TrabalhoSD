@@ -102,7 +102,7 @@ public class LerComandos implements Runnable {
             }
 
         } else if (cmd[0].equals("SAIR")) {
-            
+
             this.com.Matar();
         } else {
             System.out.println("Comando inválido");

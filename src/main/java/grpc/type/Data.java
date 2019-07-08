@@ -15,8 +15,8 @@ public class Data implements Serializable {
         this.key = chave;
         this.value = valor;
     }
-
-    public String toStringValue() {
+    @Override
+    public String toString() {
 
         return "Dado com chave " + key + ": " + new String(value);
 
