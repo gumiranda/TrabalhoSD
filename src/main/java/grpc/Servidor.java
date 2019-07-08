@@ -48,14 +48,16 @@ public class Servidor extends StateMachine {
         this.Banco = new BaseDados();
         this.tabela = new FingerTable(this, porta_servidor);
         this.com = new ComunicaThread();
-        this.Banco.RecuperarBanco(this.chave_responsavel.toString());
     }
 
     public Servidor() {
         this.Banco = new BaseDados();
         this.com = new ComunicaThread();
     }
-
+    
+    public void recuperarBanco() throws IOException{
+        this.Banco.RecuperarBanco(Integer.toString(this.IdServidor));
+    }
     public static void main(String[] args) throws IOException, InterruptedException, Exception {
         int IdServidor = Integer.parseInt(args[0]);
         Servidor server1 = new Servidor();
@@ -80,7 +82,7 @@ public class Servidor extends StateMachine {
 
         CopycatServer server = builder.build();
         server1.server = server;
-
+        server1.recuperarBanco();
         server1.start();
 
     }
@@ -91,9 +93,9 @@ public class Servidor extends StateMachine {
         CopiarLista copy = new CopiarLista(this.F1, this.F2, this.F3);
         new Thread(copy).start();
         AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
-        SnapShot snapshot = new SnapShot(this.Banco, this.com, this.chave_responsavel.toString());
+        SnapShot snapshot = new SnapShot(this.Banco, this.com, Integer.toString(this.IdServidor));
         new Thread(snapshot).start();
-        Log log = new Log(this.F2, this.com, snapshot, this.chave_responsavel.toString());
+        Log log = new Log(this.F2, this.com, snapshot, Integer.toString(this.IdServidor));
         new Thread(log).start();
         if (this.IdServidor == 0) {
             System.out.println("Server started");
@@ -110,7 +112,7 @@ public class Servidor extends StateMachine {
             CreateCommand aec = commit.operation();
             String dado = new String(aec.value, "UTF-8");
             System.out.println("Valor: " +dado);
-            Comando cmd = new Comando("INSERT", aec.value.toString(), aec.key);
+            Comando cmd = new Comando("INSERT", dado, aec.key);
             AplicarAoBanco bancoDados = new AplicarAoBanco(this.Banco, this.F3, this);
             String retorno = bancoDados.ProcessaComando(cmd);
             Data e = new Data(aec.key, dado.getBytes());
